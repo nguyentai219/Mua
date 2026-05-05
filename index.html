@@ -1,0 +1,1746 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Trời Hôm Nay</title>
+
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#0a1628" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Trời Hôm Nay" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="description" content="Dự báo thời tiết và mưa theo vị trí thực tế" />
+
+  <!-- Manifest -->
+  <link rel="manifest" href="manifest.json" />
+
+  <!-- Apple Touch Icons -->
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png" />
+  <link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167.png" />
+
+  <!-- Splash screens for iOS -->
+  <link rel="apple-touch-startup-image" href="icons/splash-2048.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)" />
+
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg: #060d1a;
+      --surface: rgba(255,255,255,0.04);
+      --surface2: rgba(255,255,255,0.08);
+      --border: rgba(255,255,255,0.09);
+      --accent: #4fc3f7;
+      --accent2: #81d4fa;
+      --rain: #29b6f6;
+      --text: #e8f4fd;
+      --muted: rgba(232,244,253,0.45);
+      --danger: #ef5350;
+      --warn: #ffa726;
+      --safe: #66bb6a;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      user-select: none;
+    }
+
+    /* Animated sky background */
+    .sky {
+      position: fixed; inset: 0;
+      background: linear-gradient(170deg, #060d1a 0%, #0a1a35 40%, #0d2244 70%, #0a1a30 100%);
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .stars {
+      position: absolute; inset: 0;
+      background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.6) 0%, transparent 100%),
+        radial-gradient(1px 1px at 50% 15%, rgba(255,255,255,0.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 80% 25%, rgba(255,255,255,0.5) 0%, transparent 100%),
+        radial-gradient(1px 1px at 35% 60%, rgba(255,255,255,0.3) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 65% 45%, rgba(255,255,255,0.5) 0%, transparent 100%),
+        radial-gradient(1px 1px at 10% 70%, rgba(255,255,255,0.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 90% 65%, rgba(255,255,255,0.3) 0%, transparent 100%),
+        radial-gradient(1px 1px at 45% 80%, rgba(255,255,255,0.25) 0%, transparent 100%);
+    }
+
+    .aurora {
+      position: absolute;
+      width: 200%; height: 60%;
+      top: -20%; left: -50%;
+      background: radial-gradient(ellipse at 50% 50%,
+        rgba(79,195,247,0.07) 0%,
+        rgba(41,182,246,0.04) 30%,
+        transparent 70%);
+      animation: aurora 8s ease-in-out infinite alternate;
+    }
+
+    @keyframes aurora {
+      0% { transform: translateX(-5%) rotate(-2deg); }
+      100% { transform: translateX(5%) rotate(2deg); }
+    }
+
+    /* App shell */
+    .app {
+      position: relative; z-index: 1;
+      height: 100dvh;
+      display: flex; flex-direction: column;
+      padding: env(safe-area-inset-top, 20px) env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 20px) env(safe-area-inset-left, 0);
+      overflow: hidden;
+    }
+
+    /* Header */
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px 8px;
+    }
+
+    .location-pill {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 13px;
+      color: var(--accent);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .location-pill:active { transform: scale(0.96); }
+
+    .location-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    .time-display {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* Main scroll area */
+    .scroll-area {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 0 16px 16px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .scroll-area::-webkit-scrollbar { display: none; }
+
+    /* Hero card */
+    .hero-card {
+      position: relative;
+      background: linear-gradient(135deg,
+        rgba(79,195,247,0.12) 0%,
+        rgba(30,136,229,0.08) 50%,
+        rgba(13,71,161,0.12) 100%);
+      border: 1px solid rgba(79,195,247,0.2);
+      border-radius: 28px;
+      padding: 28px 24px;
+      margin-bottom: 16px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      -webkit-backdrop-filter: blur(20px);
+      backdrop-filter: blur(20px);
+    }
+
+    .hero-card:active { transform: scale(0.985); }
+
+    .hero-card::before {
+      content: '';
+      position: absolute;
+      top: -50%; right: -20%;
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(79,195,247,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    .hero-temp-row {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .hero-temp {
+      font-size: 88px;
+      font-weight: 200;
+      line-height: 1;
+      color: var(--text);
+      letter-spacing: -4px;
+    }
+
+    .hero-temp sup {
+      font-size: 24px;
+      font-weight: 400;
+      vertical-align: top;
+      margin-top: 16px;
+      opacity: 0.6;
+    }
+
+    .weather-icon-big {
+      font-size: 72px;
+      filter: drop-shadow(0 0 20px rgba(79,195,247,0.4));
+      animation: float 4s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    .hero-desc {
+      font-size: 18px;
+      font-weight: 300;
+      color: var(--accent2);
+      margin-bottom: 20px;
+    }
+
+    .hero-stats {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .stat-item {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .stat-val { font-size: 18px; font-weight: 600; color: var(--text); }
+    .stat-label { font-size: 10px; color: var(--muted); margin-top: 2px; letter-spacing: 0.5px; }
+
+    /* Tap hint */
+    .tap-hint {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      margin-top: 16px;
+      font-size: 12px;
+      color: var(--accent);
+      opacity: 0.7;
+    }
+
+    .tap-ripple {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      border: 1.5px solid var(--accent);
+      animation: ripple 1.5s ease-out infinite;
+    }
+
+    @keyframes ripple {
+      0% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(2.5); opacity: 0; }
+    }
+
+    /* Section title */
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 20px 4px 10px;
+    }
+
+    /* Hourly rain chart */
+    .rain-chart-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 20px 16px 16px;
+      margin-bottom: 16px;
+      -webkit-backdrop-filter: blur(20px);
+      backdrop-filter: blur(20px);
+      overflow: hidden;
+    }
+
+    .rain-chart-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 16px;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    /* Scrollable wrapper keeps bars inside the card */
+    .chart-scroll {
+      overflow-x: auto;
+      overflow-y: visible;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      margin: 0 -4px;
+      padding: 0 4px 4px;
+    }
+    .chart-scroll::-webkit-scrollbar { display: none; }
+
+    .chart-wrap {
+      display: flex;
+      align-items: flex-end;
+      gap: 0;
+      height: 90px;
+      /* min-width ensures all bars fit; will scroll if needed */
+      min-width: max-content;
+      width: 100%;
+    }
+
+    .bar-col {
+      flex: none;
+      width: 52px;          /* fixed width per column */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      height: 100%;
+    }
+
+    .bar-fill-wrap {
+      flex: 1;
+      width: 32px;          /* bar narrower than column */
+      display: flex;
+      align-items: flex-end;
+      position: relative;
+    }
+
+    .bar-fill {
+      width: 100%;
+      border-radius: 4px 4px 0 0;
+      transition: height 0.8s cubic-bezier(0.34,1.56,0.64,1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .bar-fill::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 40%;
+      background: linear-gradient(to bottom, rgba(255,255,255,0.15), transparent);
+      border-radius: 4px 4px 0 0;
+    }
+
+    .bar-time {
+      font-size: 9px;
+      color: var(--muted);
+      font-family: 'Space Mono', monospace;
+      white-space: nowrap;
+    }
+
+    .bar-pct {
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    /* 7-day forecast */
+    .forecast-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .forecast-row {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      -webkit-backdrop-filter: blur(20px);
+      backdrop-filter: blur(20px);
+    }
+
+    .fc-day { font-size: 14px; font-weight: 500; width: 60px; }
+    .fc-icon { font-size: 24px; }
+    .fc-bar-wrap { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+
+    .fc-bar-bg {
+      width: 100%;
+      height: 4px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .fc-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.8s ease;
+    }
+
+    .fc-info { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); }
+    .fc-pct { font-size: 14px; font-weight: 700; min-width: 40px; text-align: right; }
+
+    /* Modal overlay */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7);
+      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
+      z-index: 100;
+      display: flex;
+      align-items: flex-end;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.35s;
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal-sheet {
+      width: 100%;
+      background: linear-gradient(160deg, #0d1f3c 0%, #0a1628 100%);
+      border-top: 1px solid rgba(79,195,247,0.2);
+      border-radius: 28px 28px 0 0;
+      padding: 0 0 env(safe-area-inset-bottom, 20px);
+      transform: translateY(100%);
+      transition: transform 0.4s cubic-bezier(0.34,1.2,0.64,1);
+      max-height: 90dvh;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .modal-sheet::-webkit-scrollbar { display: none; }
+
+    .modal-overlay.open .modal-sheet {
+      transform: translateY(0);
+    }
+
+    .modal-handle {
+      width: 36px; height: 4px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 2px;
+      margin: 12px auto 0;
+    }
+
+    .modal-header {
+      padding: 20px 24px 0;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
+    .modal-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .modal-subtitle {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .modal-close {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      border: none;
+      color: var(--muted);
+      font-size: 18px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+    }
+
+    .modal-body { padding: 20px 24px; }
+
+    /* Big rain probability circle */
+    .rain-circle-wrap {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
+
+    .rain-circle-svg { transform: rotate(-90deg); }
+
+    .circle-text {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+
+    .circle-pct { font-size: 42px; font-weight: 700; color: var(--text); line-height: 1; }
+    .circle-label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    .circle-container {
+      position: relative;
+      display: inline-block;
+    }
+
+    /* Rain info grid */
+    .rain-info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .rain-info-box {
+      background: rgba(79,195,247,0.07);
+      border: 1px solid rgba(79,195,247,0.15);
+      border-radius: 16px;
+      padding: 14px;
+    }
+
+    .rib-icon { font-size: 22px; margin-bottom: 6px; }
+    .rib-val { font-size: 20px; font-weight: 700; color: var(--text); }
+    .rib-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* ── Rain intensity visual card ── */
+    .rain-intensity-card {
+      background: linear-gradient(135deg, rgba(13,30,60,0.9) 0%, rgba(10,22,45,0.95) 100%);
+      border: 1px solid rgba(79,195,247,0.18);
+      border-radius: 20px;
+      padding: 18px 16px 16px;
+      margin-bottom: 20px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .ric-title {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    /* Scene: sky + animated rain drops */
+    .rain-scene {
+      position: relative;
+      height: 90px;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: stretch;
+    }
+
+    .rain-level {
+      flex: 1;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      padding-bottom: 6px;
+      cursor: default;
+      transition: background 0.3s;
+    }
+
+    .rain-level.active-level {
+      background: rgba(79,195,247,0.08);
+      border-radius: 10px;
+    }
+
+    .rain-level-label {
+      font-size: 9px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.5px;
+      text-align: center;
+      line-height: 1.3;
+      z-index: 2;
+      position: relative;
+    }
+
+    .rain-level.active-level .rain-level-label {
+      color: var(--accent);
+    }
+
+    /* SVG drops per column */
+    .drops-svg {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      width: 100%; height: 75px;
+    }
+
+    /* Intensity meter bar */
+    .intensity-meter {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .meter-track {
+      flex: 1;
+      height: 10px;
+      background: rgba(255,255,255,0.07);
+      border-radius: 5px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .meter-fill {
+      height: 100%;
+      border-radius: 5px;
+      transition: width 1s cubic-bezier(0.34,1.1,0.64,1);
+      position: relative;
+    }
+
+    .meter-fill::after {
+      content: '';
+      position: absolute;
+      right: 0; top: 0; bottom: 0;
+      width: 6px;
+      background: rgba(255,255,255,0.5);
+      border-radius: 3px;
+      filter: blur(2px);
+    }
+
+    .meter-icon { font-size: 18px; flex-shrink: 0; }
+
+    /* Verdict badge */
+    .intensity-verdict {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+
+    .verdict-emoji { font-size: 26px; flex-shrink: 0; }
+
+    .verdict-text strong {
+      display: block;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .verdict-text span {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    /* Dividers between rain levels in scene */
+    .rain-level + .rain-level {
+      border-left: 1px solid rgba(255,255,255,0.05);
+    }
+
+    /* Active marker arrow */
+    .active-arrow {
+      position: absolute;
+      top: 2px;
+      font-size: 10px;
+      color: var(--accent);
+      animation: bob 1s ease-in-out infinite alternate;
+    }
+    @keyframes bob {
+      from { transform: translateY(0); }
+      to   { transform: translateY(3px); }
+    }
+
+    /* Timeline */
+    .timeline { display: flex; flex-direction: column; gap: 0; }
+
+    .tl-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .tl-row:last-child { border-bottom: none; }
+
+    .tl-time {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      color: var(--muted);
+      width: 48px;
+      flex-shrink: 0;
+    }
+
+    .tl-bar-wrap {
+      flex: 1;
+      height: 8px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .tl-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.6s ease;
+    }
+
+    .tl-pct {
+      font-size: 13px;
+      font-weight: 700;
+      min-width: 36px;
+      text-align: right;
+    }
+
+    .tl-desc { font-size: 11px; color: var(--muted); min-width: 60px; text-align: right; }
+
+    /* Alert banner */
+    .alert-banner {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(239,83,80,0.1);
+      border: 1px solid rgba(239,83,80,0.25);
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      font-size: 13px;
+    }
+
+    .alert-banner.warn {
+      background: rgba(255,167,38,0.1);
+      border-color: rgba(255,167,38,0.25);
+    }
+
+    .alert-banner.info {
+      background: rgba(79,195,247,0.07);
+      border-color: rgba(79,195,247,0.15);
+    }
+
+    /* Loading spinner */
+    .loading-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100dvh;
+      gap: 20px;
+    }
+
+    .spinner {
+      width: 48px; height: 48px;
+      border: 3px solid rgba(79,195,247,0.15);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-text { font-size: 14px; color: var(--muted); }
+
+    /* Error state */
+    .error-wrap {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      height: 100dvh; gap: 16px; padding: 40px;
+      text-align: center;
+    }
+
+    .error-icon { font-size: 48px; }
+    .error-title { font-size: 18px; font-weight: 600; }
+    .error-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+    .btn-retry {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 24px;
+      padding: 12px 28px;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: 'Outfit', sans-serif;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    /* Install banner */
+    .install-banner {
+      position: fixed;
+      bottom: calc(env(safe-area-inset-bottom, 16px) + 16px);
+      left: 16px; right: 16px;
+      background: linear-gradient(135deg, rgba(79,195,247,0.15), rgba(30,136,229,0.1));
+      border: 1px solid rgba(79,195,247,0.3);
+      border-radius: 18px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 50;
+      -webkit-backdrop-filter: blur(20px);
+      backdrop-filter: blur(20px);
+      transform: translateY(120%);
+      transition: transform 0.4s cubic-bezier(0.34,1.2,0.64,1);
+    }
+
+    .install-banner.show { transform: translateY(0); }
+    .install-text { flex: 1; }
+    .install-text strong { font-size: 14px; display: block; }
+    .install-text span { font-size: 11px; color: var(--muted); }
+    .install-btn { background: var(--accent); color: #000; border: none; border-radius: 10px; padding: 8px 14px; font-weight: 700; font-size: 13px; font-family: 'Outfit', sans-serif; cursor: pointer; white-space: nowrap; }
+    .install-dismiss { color: var(--muted); font-size: 18px; background: none; border: none; cursor: pointer; padding: 4px; }
+
+    /* Bottom nav placeholder */
+    .bottom-safe { height: env(safe-area-inset-bottom, 20px); }
+
+    .hidden { display: none !important; }
+
+    /* Gradient for bars */
+    .bar-low { background: linear-gradient(to top, #29b6f6, #4fc3f7); }
+    .bar-med { background: linear-gradient(to top, #1e88e5, #29b6f6); }
+    .bar-high { background: linear-gradient(to top, #1565c0, #1e88e5); }
+    .bar-vhigh { background: linear-gradient(to top, #ef5350, #e57373); }
+
+    .pct-low { color: #4fc3f7; }
+    .pct-med { color: #29b6f6; }
+    .pct-high { color: #ffa726; }
+    .pct-vhigh { color: #ef5350; }
+
+    /* Shimmer loading effect */
+    .shimmer {
+      background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.07) 50%, rgba(255,255,255,0.03) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 8px;
+    }
+
+    @keyframes shimmer { to { background-position: -200% 0; } }
+  </style>
+</head>
+<body>
+
+<div class="sky">
+  <div class="stars"></div>
+  <div class="aurora"></div>
+</div>
+
+<!-- Loading -->
+<div class="loading-wrap" id="loadingView">
+  <div class="spinner"></div>
+  <div class="loading-text">Đang lấy vị trí của bạn…</div>
+</div>
+
+<!-- Error -->
+<div class="error-wrap hidden" id="errorView">
+  <div class="error-icon">📍</div>
+  <div class="error-title">Không thể lấy vị trí</div>
+  <div class="error-desc" id="errorDesc">Vui lòng cho phép ứng dụng truy cập vị trí để xem thông tin thời tiết chính xác.</div>
+  <button class="btn-retry" onclick="init()">Thử lại</button>
+</div>
+
+<!-- Main App -->
+<div class="app hidden" id="mainView">
+  <!-- Header -->
+  <div class="header">
+    <div class="location-pill" id="locationPill">
+      <span class="location-dot"></span>
+      <span id="locationName">Đang tải…</span>
+    </div>
+    <div class="time-display" id="timeDisplay"></div>
+  </div>
+
+  <!-- Content -->
+  <div class="scroll-area">
+
+    <!-- Hero card -->
+    <div class="hero-card" id="heroCard" onclick="openModal()">
+      <div class="hero-label">☁ Thời tiết hôm nay &nbsp;·&nbsp; <span id="heroDate"></span></div>
+      <div class="hero-temp-row">
+        <div class="hero-temp" id="heroTemp">--<sup>°C</sup></div>
+        <div class="weather-icon-big" id="heroIcon">🌥</div>
+      </div>
+      <div class="hero-desc" id="heroDesc">Đang tải…</div>
+      <div class="hero-stats">
+        <div class="stat-item">
+          <div class="stat-val" id="statHumidity">--%</div>
+          <div class="stat-label">Độ ẩm</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val" id="statWind">--</div>
+          <div class="stat-label">Gió km/h</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val" id="statRain">--%</div>
+          <div class="stat-label">Khả năng mưa</div>
+        </div>
+      </div>
+      <div class="tap-hint">
+        <div class="tap-ripple"></div>
+        Nhấn để xem dự báo mưa chi tiết
+      </div>
+    </div>
+
+    <!-- Hourly rain chart -->
+    <div class="section-title">⛈ Mưa theo giờ hôm nay</div>
+    <div class="rain-chart-card">
+      <div class="chart-scroll">
+        <div class="chart-wrap" id="hourlyChart">
+          <!-- bars injected -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 7-day forecast -->
+    <div class="section-title">📅 Dự báo 7 ngày</div>
+    <div class="forecast-list" id="forecastList">
+      <!-- rows injected -->
+    </div>
+
+    <div class="bottom-safe"></div>
+  </div>
+</div>
+
+<!-- Modal sheet -->
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal-sheet" id="modalSheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">🌧 Dự báo mưa chi tiết</div>
+        <div class="modal-subtitle" id="modalSubtitle">Hôm nay • <span id="modalLoc"></span></div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Alert -->
+      <div id="modalAlert" class="alert-banner info hidden">
+        <span id="modalAlertIcon">ℹ️</span>
+        <span id="modalAlertText"></span>
+      </div>
+
+      <!-- Big circle -->
+      <div class="rain-circle-wrap">
+        <div class="circle-container">
+          <svg class="rain-circle-svg" width="160" height="160" viewBox="0 0 160 160">
+            <circle cx="80" cy="80" r="68" fill="none" stroke="rgba(79,195,247,0.1)" stroke-width="10"/>
+            <circle id="circleProgress" cx="80" cy="80" r="68" fill="none" stroke="url(#rainGrad)" stroke-width="10"
+              stroke-linecap="round" stroke-dasharray="427" stroke-dashoffset="427"
+              style="transition: stroke-dashoffset 1.2s cubic-bezier(0.34,1.1,0.64,1)"/>
+            <defs>
+              <linearGradient id="rainGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#4fc3f7"/>
+                <stop offset="100%" stop-color="#1565c0"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <div class="circle-text">
+            <div class="circle-pct" id="circleNum">0%</div>
+            <div class="circle-label">Khả năng mưa</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Info grid -->
+      <div class="rain-info-grid">
+        <div class="rain-info-box">
+          <div class="rib-icon">🕐</div>
+          <div class="rib-val" id="rainStartTime">--:--</div>
+          <div class="rib-label">Bắt đầu mưa</div>
+        </div>
+        <div class="rain-info-box">
+          <div class="rib-icon">🕔</div>
+          <div class="rib-val" id="rainEndTime">--:--</div>
+          <div class="rib-label">Ngừng mưa</div>
+        </div>
+        <div class="rain-info-box">
+          <div class="rib-icon">💧</div>
+          <div class="rib-val" id="rainAmount">--mm</div>
+          <div class="rib-label">Lượng mưa</div>
+        </div>
+        <div class="rain-info-box">
+          <div class="rib-icon">⏱</div>
+          <div class="rib-val" id="rainDuration">-- giờ</div>
+          <div class="rib-label">Thời gian mưa</div>
+        </div>
+      </div>
+
+      <!-- Rain intensity visual -->
+      <div class="rain-intensity-card" id="rainIntensityCard">
+        <div class="ric-title">📊 Cường độ mưa hôm nay</div>
+
+        <!-- Animated rain scene: 4 columns = 4 levels -->
+        <div class="rain-scene" id="rainScene">
+          <!-- Levels injected by JS -->
+        </div>
+
+        <!-- Linear meter -->
+        <div class="intensity-meter">
+          <div class="meter-icon">🌤</div>
+          <div class="meter-track">
+            <div class="meter-fill" id="intensityMeterFill" style="width:0%"></div>
+          </div>
+          <div class="meter-icon">⛈</div>
+        </div>
+
+        <!-- Human-readable verdict -->
+        <div class="intensity-verdict">
+          <div class="verdict-emoji" id="verdictEmoji">💧</div>
+          <div class="verdict-text">
+            <strong id="verdictTitle">Đang tính…</strong>
+            <span id="verdictDesc">--</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hourly timeline -->
+      <div class="section-title" style="margin-top:4px">Theo từng giờ</div>
+      <div class="timeline" id="rainTimeline">
+        <!-- rows injected -->
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Install banner -->
+<div class="install-banner" id="installBanner">
+  <div style="font-size:28px">📲</div>
+  <div class="install-text">
+    <strong>Cài về màn hình chính</strong>
+    <span>Dùng như app thật, không cần mạng</span>
+  </div>
+  <button class="install-btn" id="installBtn">Cài</button>
+  <button class="install-dismiss" onclick="dismissInstall()">✕</button>
+</div>
+
+<!-- Day Detail Modal -->
+<div class="modal-overlay" id="dayModalOverlay" onclick="handleDayOverlayClick(event)">
+  <div class="modal-sheet" id="dayModalSheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="dayModalTitle">Chi tiết ngày</div>
+        <div class="modal-subtitle" id="dayModalSubtitle"></div>
+      </div>
+      <button class="modal-close" onclick="closeDayModal()">✕</button>
+    </div>
+    <div class="modal-body" id="dayModalBody">
+      <!-- injected by JS -->
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── CONFIG ────────────────────────────────────────────────────────
+const API_BASE = 'https://api.open-meteo.com/v1/forecast';
+const GEO_BASE = 'https://nominatim.openstreetmap.org/reverse';
+
+// ─── STATE ─────────────────────────────────────────────────────────
+let weatherData = null;
+let userLat = null, userLon = null;
+let deferredPrompt = null;
+
+// ─── INIT ──────────────────────────────────────────────────────────
+async function init() {
+  show('loadingView'); hide('mainView'); hide('errorView');
+  try {
+    const pos = await getLocation();
+    userLat = pos.coords.latitude;
+    userLon = pos.coords.longitude;
+    await Promise.all([fetchWeather(), fetchLocationName()]);
+    renderAll();
+    show('mainView'); hide('loadingView');
+  } catch (e) {
+    console.error(e);
+    document.getElementById('errorDesc').textContent = e.message || 'Không thể kết nối. Vui lòng kiểm tra kết nối mạng.';
+    show('errorView'); hide('loadingView');
+  }
+}
+
+function getLocation() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) return reject(new Error('Trình duyệt không hỗ trợ định vị.'));
+    navigator.geolocation.getCurrentPosition(resolve, (e) => {
+      const msgs = {
+        1: 'Bạn đã từ chối quyền truy cập vị trí. Vui lòng cấp quyền trong cài đặt trình duyệt.',
+        2: 'Không thể xác định vị trí. Vui lòng thử lại.',
+        3: 'Quá thời gian lấy vị trí. Vui lòng thử lại.'
+      };
+      reject(new Error(msgs[e.code] || 'Lỗi định vị.'));
+    }, { timeout: 12000, maximumAge: 300000 });
+  });
+}
+
+async function fetchWeather() {
+  const url = `${API_BASE}?latitude=${userLat}&longitude=${userLon}`
+    + `&hourly=temperature_2m,precipitation_probability,precipitation,weathercode,windspeed_10m,relativehumidity_2m`
+    + `&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max`
+    + `&current_weather=true&timezone=auto&forecast_days=8`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Lỗi kết nối dịch vụ thời tiết.');
+  weatherData = await res.json();
+}
+
+async function fetchLocationName() {
+  try {
+    const res = await fetch(`${GEO_BASE}?lat=${userLat}&lon=${userLon}&format=json&accept-language=vi&zoom=18`, {
+      headers: { 'User-Agent': 'TroiHomNay/1.0' }
+    });
+    const data = await res.json();
+    const addr = data.address;
+
+    // Build detailed location: hamlet/suburb → ward/quarter → district/city
+    const parts = [];
+
+    // Level 1: Ấp / Khu phố / Thôn
+    const l1 = addr.hamlet || addr.suburb || addr.neighbourhood || addr.quarter || addr.allotments || addr.isolated_dwelling;
+    if (l1) parts.push(l1);
+
+    // Level 2: Xã / Phường / Thị trấn
+    const l2 = addr.village || addr.town || addr.municipality;
+    if (l2) parts.push(l2);
+
+    // Level 3: Quận / Huyện
+    const l3 = addr.city_district || addr.district || addr.county;
+    if (l3 && !parts.includes(l3)) parts.push(l3);
+
+    // Level 4: Thành phố / Tỉnh (always show)
+    const l4 = addr.city || addr.state;
+    if (l4 && !parts.includes(l4)) parts.push(l4);
+
+    const name = parts.length > 0 ? parts.join(', ') : (data.display_name ? data.display_name.split(',')[0] : 'Vị trí của bạn');
+
+    // Pill shows short name (last 2 parts max to avoid overflow)
+    const shortName = parts.slice(-2).join(', ') || name;
+    document.getElementById('locationName').textContent = shortName;
+    document.getElementById('modalLoc').textContent = name;
+  } catch { document.getElementById('locationName').textContent = 'Vị trí hiện tại'; }
+}
+
+// ─── RENDER ────────────────────────────────────────────────────────
+function renderAll() {
+  updateClock();
+  setInterval(updateClock, 30000);
+  renderHero();
+  renderHourlyChart();
+  renderForecast();
+}
+
+function updateClock() {
+  const now = new Date();
+  document.getElementById('timeDisplay').textContent =
+    now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+}
+
+function renderHero() {
+  const cw = weatherData.current_weather;
+  const h = weatherData.hourly;
+  const nowIdx = getCurrentHourIndex();
+
+  const temp = Math.round(cw.temperature);
+  const humidity = h.relativehumidity_2m[nowIdx];
+  const wind = Math.round(cw.windspeed);
+  const rainPct = h.precipitation_probability[nowIdx] || 0;
+
+  // Date string: Thứ Ba, 06/05/2025
+  const now = new Date();
+  const weekdays = ['Chủ Nhật','Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy'];
+  const dd = String(now.getDate()).padStart(2,'0');
+  const mm = String(now.getMonth()+1).padStart(2,'0');
+  const yyyy = now.getFullYear();
+  document.getElementById('heroDate').textContent = `${weekdays[now.getDay()]}, ${dd}/${mm}/${yyyy}`;
+
+  document.getElementById('heroTemp').innerHTML = `${temp}<sup>°C</sup>`;
+  document.getElementById('heroIcon').textContent = getWeatherIcon(cw.weathercode, cw.is_day);
+  document.getElementById('heroDesc').textContent = getWeatherDesc(cw.weathercode);
+  document.getElementById('statHumidity').textContent = humidity + '%';
+  document.getElementById('statWind').textContent = wind;
+  document.getElementById('statRain').textContent = rainPct + '%';
+}
+
+function renderHourlyChart() {
+  const h = weatherData.hourly;
+  const startIdx = getCurrentHourIndex();
+  const bars = [];
+  // Show 6 hours before + 18 hours after current = 24 bars total for context
+  const displayStart = Math.max(0, startIdx - 3);
+  for (let i = 0; i < 24; i++) {
+    const idx = displayStart + i;
+    if (idx >= h.time.length) break;
+    const pct = h.precipitation_probability[idx] || 0;
+    const timeStr = h.time[idx].slice(11, 16);
+    const isCurrent = (idx === startIdx);
+    bars.push({ time: timeStr, pct, isCurrent, idx });
+  }
+
+  const chartEl = document.getElementById('hourlyChart');
+  chartEl.innerHTML = '';
+
+  const colW = bars.length <= 8 ? `${Math.floor(100 / bars.length)}%` : '56px';
+
+  bars.forEach((b, bi) => {
+    const cls = b.pct < 25 ? 'bar-low' : b.pct < 50 ? 'bar-med' : b.pct < 75 ? 'bar-high' : 'bar-vhigh';
+    const pCls = b.pct < 25 ? 'pct-low' : b.pct < 50 ? 'pct-med' : b.pct < 75 ? 'pct-high' : 'pct-vhigh';
+    const height = Math.max(b.pct, 3);
+    const currentStyle = b.isCurrent
+      ? 'background:rgba(79,195,247,0.1);border-radius:10px;outline:1.5px solid rgba(79,195,247,0.5);'
+      : '';
+    const currentDot = b.isCurrent
+      ? '<div style="width:5px;height:5px;border-radius:50%;background:#4fc3f7;margin:0 auto 2px;"></div>'
+      : '<div style="height:7px"></div>';
+    chartEl.innerHTML += `
+      <div class="bar-col" id="hbar${bi}" style="width:${colW};flex:${bars.length <= 8 ? '1' : 'none'};${currentStyle}">
+        <div class="bar-pct ${pCls}">${b.pct}%</div>
+        <div class="bar-fill-wrap" style="width:${bars.length <= 8 ? '70%' : '34px'}">
+          <div class="bar-fill ${cls}" style="height:${height}%;width:100%"></div>
+        </div>
+        ${currentDot}
+        <div class="bar-time" style="${b.isCurrent ? 'color:#4fc3f7;font-weight:700;' : ''}">${b.time}</div>
+      </div>`;
+  });
+
+  // Auto-scroll: center the current-hour bar
+  requestAnimationFrame(() => {
+    const scrollEl = document.querySelector('.chart-scroll');
+    const currentBar = bars.findIndex(b => b.isCurrent);
+    if (scrollEl && currentBar >= 0) {
+      const barW = bars.length <= 8 ? (scrollEl.clientWidth / bars.length) : 56;
+      const scrollTarget = barW * currentBar - scrollEl.clientWidth / 2 + barW / 2;
+      scrollEl.scrollTo({ left: Math.max(0, scrollTarget), behavior: 'smooth' });
+    }
+  });
+}
+
+function renderForecast() {
+  const d = weatherData.daily;
+  const listEl = document.getElementById('forecastList');
+  listEl.innerHTML = '';
+  const days = ['Chủ Nhật','Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy'];
+  const daysShort = ['CN','T2','T3','T4','T5','T6','T7'];
+  for (let i = 1; i < Math.min(8, d.time.length); i++) {
+    const date = new Date(d.time[i]);
+    const dow = daysShort[date.getDay()];
+    const dd = String(date.getDate()).padStart(2,'0');
+    const mm = String(date.getMonth()+1).padStart(2,'0');
+    const icon = getWeatherIcon(d.weathercode[i], 1);
+    const pct = d.precipitation_probability_max[i] || 0;
+    const precip = d.precipitation_sum[i] || 0;
+    const cls = pct < 25 ? 'bar-low' : pct < 50 ? 'bar-med' : pct < 75 ? 'bar-high' : 'bar-vhigh';
+    const pCls = pct < 25 ? 'pct-low' : pct < 50 ? 'pct-med' : pct < 75 ? 'pct-high' : 'pct-vhigh';
+    listEl.innerHTML += `
+      <div class="forecast-row" onclick="openDayDetail(${i})" style="cursor:pointer;transition:transform 0.12s,background 0.12s;" 
+           onpointerdown="this.style.transform='scale(0.98)';this.style.background='rgba(79,195,247,0.06)'"
+           onpointerup="this.style.transform='';this.style.background=''"
+           onpointerleave="this.style.transform='';this.style.background=''">
+        <div class="fc-day">
+          <div style="font-size:14px;font-weight:600">${dow}</div>
+          <div style="font-size:10px;color:var(--muted)">${dd}/${mm}</div>
+        </div>
+        <div class="fc-icon">${icon}</div>
+        <div class="fc-bar-wrap">
+          <div class="fc-bar-bg"><div class="fc-bar-fill ${cls}" style="width:${pct}%"></div></div>
+          <div class="fc-info"><span>💧 ${precip.toFixed(1)}mm</span><span>${Math.round(d.temperature_2m_min[i])}° / ${Math.round(d.temperature_2m_max[i])}°</span></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px">
+          <div class="fc-pct ${pCls}">${pct}%</div>
+          <div style="font-size:10px;color:var(--muted)">›</div>
+        </div>
+      </div>`;
+  }
+}
+
+// ─── MODAL ─────────────────────────────────────────────────────────
+function openModal() {
+  populateModal();
+  document.getElementById('modalOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  // Animate after sheet slides in (~400ms)
+  setTimeout(() => {
+    animateCircle();
+    // Animate intensity meter
+    const fill = document.getElementById('intensityMeterFill');
+    if (fill) {
+      fill.style.transition = 'width 1s cubic-bezier(0.34,1.1,0.64,1)';
+      fill.style.width = (window._intensityMeterPct || 0) + '%';
+    }
+  }, 420);
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+}
+
+function populateModal() {
+  const h = weatherData.hourly;
+  const startIdx = getCurrentHourIndex();
+  const endOfDay = getEndOfDayIndex();
+
+  // Use FULL today's data for total rain (not just remaining hours)
+  const todayStr = weatherData.daily.time[0]; // "YYYY-MM-DD" of today
+  let totalRainToday = 0;
+  let rainStart = null, rainEnd = null;
+
+  h.time.forEach((t, i) => {
+    if (t.startsWith(todayStr)) {
+      const mm = h.precipitation[i] || 0;
+      totalRainToday += mm;
+    }
+  });
+
+  // Find upcoming rain windows (from now)
+  for (let i = startIdx; i <= endOfDay; i++) {
+    const pct = h.precipitation_probability[i] || 0;
+    if (pct >= 40) {
+      if (rainStart === null) rainStart = i;
+      rainEnd = i;
+    }
+  }
+
+  const peakPct = Math.max(...h.precipitation_probability.slice(startIdx, endOfDay + 1));
+  const peakRain = totalRainToday;
+
+  // Circle
+  window._circlePct = peakPct;
+
+  // Alert
+  const alertEl = document.getElementById('modalAlert');
+  if (peakPct >= 80) {
+    alertEl.className = 'alert-banner';
+    alertEl.classList.remove('hidden');
+    document.getElementById('modalAlertIcon').textContent = '⛈';
+    document.getElementById('modalAlertText').textContent = 'Khả năng mưa lớn hôm nay. Nên mang theo ô!';
+  } else if (peakPct >= 50) {
+    alertEl.className = 'alert-banner warn';
+    alertEl.classList.remove('hidden');
+    document.getElementById('modalAlertIcon').textContent = '🌦';
+    document.getElementById('modalAlertText').textContent = 'Có thể có mưa rào vào ban ngày.';
+  } else if (peakPct >= 30) {
+    alertEl.className = 'alert-banner info';
+    alertEl.classList.remove('hidden');
+    document.getElementById('modalAlertIcon').textContent = 'ℹ️';
+    document.getElementById('modalAlertText').textContent = 'Khả năng mưa nhẹ trong ngày.';
+  } else {
+    alertEl.classList.add('hidden');
+  }
+
+  // Info boxes
+  if (rainStart !== null) {
+    document.getElementById('rainStartTime').textContent = h.time[rainStart].slice(11, 16);
+    document.getElementById('rainEndTime').textContent = h.time[Math.min(rainEnd + 1, endOfDay)].slice(11, 16);
+    const dur = rainEnd - rainStart + 1;
+    document.getElementById('rainDuration').textContent = dur + ' giờ';
+  } else {
+    document.getElementById('rainStartTime').textContent = 'Không có';
+    document.getElementById('rainEndTime').textContent = 'Không có';
+    document.getElementById('rainDuration').textContent = '0 giờ';
+  }
+  document.getElementById('rainAmount').textContent = peakRain.toFixed(1) + 'mm';
+
+  // Render rain intensity visual immediately (sync, no timeout needed for text)
+  renderRainIntensityCard(peakRain);
+
+  // Timeline - show from current hour, up to end of day
+  const tlEl = document.getElementById('rainTimeline');
+  tlEl.innerHTML = '';
+  for (let i = startIdx; i <= Math.min(startIdx + 11, endOfDay); i++) {
+    const pct = h.precipitation_probability[i] || 0;
+    const time = h.time[i].slice(11, 16);
+    const cls = pct < 25 ? 'bar-low' : pct < 50 ? 'bar-med' : pct < 75 ? 'bar-high' : 'bar-vhigh';
+    const pCls = pct < 25 ? 'pct-low' : pct < 50 ? 'pct-med' : pct < 75 ? 'pct-high' : 'pct-vhigh';
+    const desc = pct < 20 ? 'Quang đãng' : pct < 40 ? 'Ít mây' : pct < 60 ? 'Có thể mưa' : pct < 80 ? 'Khả năng mưa' : 'Mưa to';
+    tlEl.innerHTML += `
+      <div class="tl-row">
+        <div class="tl-time">${time}</div>
+        <div class="tl-bar-wrap"><div class="tl-bar-fill ${cls}" style="width:${pct}%"></div></div>
+        <div class="tl-pct ${pCls}">${pct}%</div>
+        <div class="tl-desc">${desc}</div>
+      </div>`;
+  }
+}
+
+// ─── RAIN INTENSITY VISUAL ─────────────────────────────────────────
+function getRainIntensityInfo(mm) {
+  // WMO / Vietnam meteorological standard
+  if (mm === 0)        return { level: 0, label: 'Không mưa',   color: '#546e7a', gradient: 'linear-gradient(90deg,#37474f,#546e7a)',      emoji: '☀️',  title: 'Không có mưa',          desc: 'Trời khô ráo, không cần lo lắng.' };
+  if (mm < 0.5)        return { level: 1, label: 'Mưa phùn',    color: '#80deea', gradient: 'linear-gradient(90deg,#4fc3f7,#80deea)',      emoji: '🌦',  title: 'Mưa phùn / Nhỏ giọt',   desc: 'Hạt mưa rất nhỏ, ít ảnh hưởng sinh hoạt.' };
+  if (mm < 2.5)        return { level: 2, label: 'Mưa nhẹ',     color: '#4fc3f7', gradient: 'linear-gradient(90deg,#29b6f6,#4fc3f7)',      emoji: '🌧',  title: 'Mưa nhẹ',               desc: 'Cần mang ô, đường có thể ướt nhẹ.' };
+  if (mm < 7.5)        return { level: 3, label: 'Mưa vừa',     color: '#1e88e5', gradient: 'linear-gradient(90deg,#1565c0,#1e88e5)',      emoji: '🌧',  title: 'Mưa vừa',               desc: 'Đường ướt, nên hạn chế ra ngoài.' };
+  if (mm < 15)         return { level: 4, label: 'Mưa to',      color: '#ffa726', gradient: 'linear-gradient(90deg,#e65100,#ffa726)',      emoji: '⛈',  title: 'Mưa to',                desc: 'Mưa lớn, có thể ngập úng cục bộ.' };
+  if (mm < 30)         return { level: 5, label: 'Mưa rất to',  color: '#ef5350', gradient: 'linear-gradient(90deg,#b71c1c,#ef5350)',      emoji: '⛈',  title: 'Mưa rất to',            desc: 'Nguy cơ ngập, hạn chế di chuyển!' };
+  return               { level: 6, label: 'Mưa cực lớn', color: '#ce93d8', gradient: 'linear-gradient(90deg,#6a1b9a,#ce93d8)',      emoji: '🌊',  title: 'Mưa cực lớn / Bão',     desc: 'Cực kỳ nguy hiểm! Ở trong nhà.' };
+}
+
+function renderRainIntensityCard(totalMm) {
+  const levels = [
+    { key: 'Không mưa', mm: 0,  drops: 0,  color: '#546e7a', maxH: 0  },
+    { key: 'Mưa nhẹ',   mm: 1,  drops: 4,  color: '#4fc3f7', maxH: 55 },
+    { key: 'Mưa vừa',   mm: 5,  drops: 8,  color: '#1e88e5', maxH: 70 },
+    { key: 'Mưa to',    mm: 20, drops: 14, color: '#ef5350', maxH: 85 },
+  ];
+
+  const info = getRainIntensityInfo(totalMm);
+
+  // Active column: highest threshold not exceeding totalMm
+  const thresholds = [0, 1, 5, 20];
+  let activeIdx = 0;
+  for (let i = thresholds.length - 1; i >= 0; i--) {
+    if (totalMm >= thresholds[i]) { activeIdx = i; break; }
+  }
+
+  // Build scene columns
+  const sceneEl = document.getElementById('rainScene');
+  if (!sceneEl) return;
+  sceneEl.innerHTML = '';
+
+  levels.forEach((lv, i) => {
+    const isActive = (i === activeIdx);
+    const colDiv = document.createElement('div');
+    colDiv.className = 'rain-level' + (isActive ? ' active-level' : '');
+
+    let dropsHTML = '';
+    const W = 50, H = 75;
+    for (let d = 0; d < lv.drops; d++) {
+      const x   = 4 + Math.random() * (W - 8);
+      const y0  = -20 - Math.random() * 30;
+      const dur = (0.5 + Math.random() * 0.6).toFixed(2);
+      const del = (-(Math.random() * parseFloat(dur))).toFixed(2);
+      const ht  = 6 + Math.random() * (lv.maxH / 12);
+      const op  = (0.5 + Math.random() * 0.5).toFixed(2);
+      dropsHTML += `<line x1="${x.toFixed(1)}" y1="${y0.toFixed(1)}" x2="${(x-1).toFixed(1)}" y2="${(y0+ht).toFixed(1)}"
+        stroke="${lv.color}" stroke-width="1.5" stroke-linecap="round" opacity="${op}">
+        <animateTransform attributeName="transform" type="translate"
+          values="0,0;0,${H+30}" dur="${dur}s" begin="${del}s" repeatCount="indefinite"/>
+      </line>`;
+    }
+
+    colDiv.innerHTML = `
+      ${isActive ? '<div class="active-arrow">▼</div>' : ''}
+      <svg class="drops-svg" viewBox="0 0 50 75" preserveAspectRatio="xMidYMid meet">
+        <clipPath id="rclip${i}"><rect width="50" height="75"/></clipPath>
+        <g clip-path="url(#rclip${i})">${dropsHTML}</g>
+      </svg>
+      <div class="rain-level-label">${lv.key}</div>`;
+    sceneEl.appendChild(colDiv);
+  });
+
+  // Meter: set gradient colour immediately, width=0 (will animate after modal opens)
+  const meterPct = totalMm === 0 ? 0
+    : Math.min(100, Math.round((Math.log(totalMm + 1) / Math.log(31)) * 100));
+  const fill = document.getElementById('intensityMeterFill');
+  if (fill) {
+    fill.style.transition = 'none';
+    fill.style.width = '0%';
+    fill.style.background = info.gradient;
+  }
+  // Store for animation after open
+  window._intensityMeterPct = meterPct;
+  window._intensityGradient = info.gradient;
+
+  // Verdict — written synchronously so it shows immediately
+  const emojiEl = document.getElementById('verdictEmoji');
+  const titleEl = document.getElementById('verdictTitle');
+  const descEl  = document.getElementById('verdictDesc');
+  if (emojiEl) emojiEl.textContent = info.emoji;
+  if (titleEl) titleEl.textContent = `${info.title}  (${totalMm.toFixed(1)} mm)`;
+  if (descEl)  descEl.textContent  = info.desc;
+}
+
+// ─── DAY DETAIL MODAL ──────────────────────────────────────────────
+function openDayDetail(dayIdx) {
+  const d = weatherData.daily;
+  const h = weatherData.hourly;
+  const date = new Date(d.time[dayIdx]);
+  const weekdays = ['Chủ Nhật','Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy'];
+  const dd = String(date.getDate()).padStart(2,'0');
+  const mm2 = String(date.getMonth()+1).padStart(2,'0');
+
+  document.getElementById('dayModalTitle').textContent =
+    `${getWeatherIcon(d.weathercode[dayIdx], 1)} ${weekdays[date.getDay()]}`;
+  document.getElementById('dayModalSubtitle').textContent =
+    `${dd}/${mm2} · ${getWeatherDesc(d.weathercode[dayIdx])}`;
+
+  const pct    = d.precipitation_probability_max[dayIdx] || 0;
+  const precip = d.precipitation_sum[dayIdx] || 0;
+  const tMin   = Math.round(d.temperature_2m_min[dayIdx]);
+  const tMax   = Math.round(d.temperature_2m_max[dayIdx]);
+  const info   = getRainIntensityInfo(precip);
+
+  // Find hourly rows for that day
+  const dayStr = d.time[dayIdx]; // "YYYY-MM-DD"
+  const hourlyRows = [];
+  h.time.forEach((t, i) => {
+    if (t.startsWith(dayStr)) {
+      hourlyRows.push({
+        time: t.slice(11,16),
+        pct:  h.precipitation_probability[i] || 0,
+        mm:   h.precipitation[i] || 0,
+        temp: Math.round(h.temperature_2m[i] || 0)
+      });
+    }
+  });
+
+  const pCls = pct < 25 ? 'pct-low' : pct < 50 ? 'pct-med' : pct < 75 ? 'pct-high' : 'pct-vhigh';
+  const meterPct = precip === 0 ? 0 : Math.min(100, Math.round((Math.log(precip+1)/Math.log(31))*100));
+
+  let tlHTML = '';
+  hourlyRows.forEach(r => {
+    const cls2  = r.pct < 25 ? 'bar-low'  : r.pct < 50 ? 'bar-med'  : r.pct < 75 ? 'bar-high'  : 'bar-vhigh';
+    const pCls2 = r.pct < 25 ? 'pct-low'  : r.pct < 50 ? 'pct-med'  : r.pct < 75 ? 'pct-high'  : 'pct-vhigh';
+    const desc2 = r.pct < 20 ? 'Quang đãng' : r.pct < 40 ? 'Ít mây' : r.pct < 60 ? 'Có thể mưa' : r.pct < 80 ? 'Khả năng mưa' : 'Mưa to';
+    tlHTML += `
+      <div class="tl-row">
+        <div class="tl-time">${r.time}</div>
+        <div style="font-size:11px;color:var(--muted);min-width:30px">${r.temp}°</div>
+        <div class="tl-bar-wrap"><div class="tl-bar-fill ${cls2}" style="width:${r.pct}%"></div></div>
+        <div class="tl-pct ${pCls2}">${r.pct}%</div>
+        <div class="tl-desc">${desc2}</div>
+      </div>`;
+  });
+
+  document.getElementById('dayModalBody').innerHTML = `
+    <!-- Temp + summary row -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
+      <div class="rain-info-box">
+        <div class="rib-icon">🌡</div>
+        <div class="rib-val">${tMin}°</div>
+        <div class="rib-label">Thấp nhất</div>
+      </div>
+      <div class="rain-info-box">
+        <div class="rib-icon">☀️</div>
+        <div class="rib-val">${tMax}°</div>
+        <div class="rib-label">Cao nhất</div>
+      </div>
+      <div class="rain-info-box">
+        <div class="rib-icon">💧</div>
+        <div class="rib-val">${precip.toFixed(1)}mm</div>
+        <div class="rib-label">Lượng mưa</div>
+      </div>
+    </div>
+
+    <!-- Rain probability bar -->
+    <div class="rain-info-box" style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:12px;color:var(--muted);font-weight:600;letter-spacing:1px">KHẢ NĂNG MƯA CAO NHẤT</div>
+        <div class="fc-pct ${pCls}" style="font-size:20px">${pct}%</div>
+      </div>
+      <div class="fc-bar-bg" style="height:8px">
+        <div class="fc-bar-fill ${pct<25?'bar-low':pct<50?'bar-med':pct<75?'bar-high':'bar-vhigh'}" style="width:${pct}%;height:100%"></div>
+      </div>
+    </div>
+
+    <!-- Intensity verdict -->
+    <div class="intensity-verdict" style="margin-bottom:16px">
+      <div class="verdict-emoji">${info.emoji}</div>
+      <div class="verdict-text">
+        <strong>${info.title}</strong>
+        <span>${info.desc}</span>
+      </div>
+    </div>
+
+    <!-- Intensity meter -->
+    <div class="intensity-meter" style="margin-bottom:20px">
+      <div class="meter-icon">🌤</div>
+      <div class="meter-track">
+        <div id="dayMeterFill" class="meter-fill" style="width:0%;background:${info.gradient}"></div>
+      </div>
+      <div class="meter-icon">⛈</div>
+    </div>
+
+    <!-- Hourly timeline for the day -->
+    ${hourlyRows.length > 0 ? `
+      <div class="section-title" style="margin-top:0">⛈ Mưa theo giờ</div>
+
+      <!-- Mini bar chart -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px 12px 12px;margin-bottom:14px;overflow:hidden">
+        <div style="overflow-x:auto;scrollbar-width:none">
+          <div style="display:flex;align-items:flex-end;gap:0;height:80px;min-width:max-content">
+            ${hourlyRows.map(r => {
+              const bc = r.pct < 25 ? 'bar-low' : r.pct < 50 ? 'bar-med' : r.pct < 75 ? 'bar-high' : 'bar-vhigh';
+              const pc = r.pct < 25 ? 'pct-low' : r.pct < 50 ? 'pct-med' : r.pct < 75 ? 'pct-high' : 'pct-vhigh';
+              const h2 = Math.max(r.pct, 3);
+              return `<div style="flex:none;width:48px;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%">
+                <div class="${pc}" style="font-size:9px;font-weight:700">${r.pct}%</div>
+                <div style="flex:1;width:28px;display:flex;align-items:flex-end">
+                  <div class="bar-fill ${bc}" style="height:${h2}%;width:100%;border-radius:4px 4px 0 0"></div>
+                </div>
+                <div style="font-size:9px;color:var(--muted);font-family:'Space Mono',monospace">${r.time}</div>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+
+      <!-- Detailed rows -->
+      <div class="section-title" style="margin-top:4px">Chi tiết theo giờ</div>
+      <div class="timeline">${tlHTML}</div>
+    ` : '<div style="text-align:center;color:var(--muted);font-size:13px;padding:16px 0">Không có dữ liệu theo giờ</div>'}
+  `;
+
+  document.getElementById('dayModalOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  // Animate meter after sheet slides in (~420ms)
+  setTimeout(() => {
+    const fill = document.getElementById('dayMeterFill');
+    if (fill) {
+      fill.style.transition = 'width 1s cubic-bezier(0.34,1.1,0.64,1)';
+      fill.style.width = meterPct + '%';
+    }
+  }, 420);
+}
+
+function closeDayModal() {
+  document.getElementById('dayModalOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function handleDayOverlayClick(e) {
+  if (e.target === document.getElementById('dayModalOverlay')) closeDayModal();
+}
+
+function animateCircle() {
+  const pct = window._circlePct || 0;
+  const circ = 2 * Math.PI * 68;
+  const offset = circ * (1 - pct / 100);
+  document.getElementById('circleProgress').style.strokeDashoffset = offset;
+  // Animate number
+  let start = 0;
+  const el = document.getElementById('circleNum');
+  const duration = 1000;
+  const startTime = Date.now();
+  function tick() {
+    const progress = Math.min((Date.now() - startTime) / duration, 1);
+    const ease = 1 - Math.pow(1 - progress, 3);
+    el.textContent = Math.round(ease * pct) + '%';
+    if (progress < 1) requestAnimationFrame(tick);
+  }
+  tick();
+}
+
+// ─── HELPERS ───────────────────────────────────────────────────────
+function getCurrentHourIndex() {
+  if (!weatherData) return 0;
+  const now = new Date();
+  // Build local datetime string "YYYY-MM-DDTHH" to match API format
+  const pad = n => String(n).padStart(2, '0');
+  const localStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}`;
+  const idx = weatherData.hourly.time.findIndex(t => t === localStr);
+  // Fallback: find closest
+  if (idx >= 0) return idx;
+  const nowMs = now.getTime();
+  let best = 0, bestDiff = Infinity;
+  weatherData.hourly.time.forEach((t, i) => {
+    const diff = Math.abs(new Date(t).getTime() - nowMs);
+    if (diff < bestDiff) { bestDiff = diff; best = i; }
+  });
+  return best;
+}
+
+function getEndOfDayIndex() {
+  if (!weatherData) return 0;
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const todayStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  // Last hour of today in the data
+  let lastIdx = getCurrentHourIndex();
+  weatherData.hourly.time.forEach((t, i) => {
+    if (t.startsWith(todayStr)) lastIdx = i;
+  });
+  return lastIdx;
+}
+
+function getWeatherIcon(code, isDay) {
+  const icons = {
+    0: isDay ? '☀️' : '🌙',
+    1: isDay ? '🌤' : '🌙',
+    2: '⛅', 3: '☁️',
+    45: '🌫', 48: '🌫',
+    51: '🌦', 53: '🌧', 55: '🌧',
+    61: '🌦', 63: '🌧', 65: '🌧',
+    71: '🌨', 73: '❄️', 75: '❄️',
+    77: '🌨',
+    80: '🌦', 81: '🌧', 82: '⛈',
+    85: '🌨', 86: '❄️',
+    95: '⛈', 96: '⛈', 99: '⛈'
+  };
+  return icons[code] || (isDay ? '🌤' : '🌙');
+}
+
+function getWeatherDesc(code) {
+  const descs = {
+    0: 'Bầu trời trong xanh', 1: 'Chủ yếu quang đãng',
+    2: 'Có mây một phần', 3: 'Trời nhiều mây',
+    45: 'Sương mù', 48: 'Sương đóng băng',
+    51: 'Mưa phùn nhẹ', 53: 'Mưa phùn vừa', 55: 'Mưa phùn nặng',
+    61: 'Mưa nhẹ', 63: 'Mưa vừa', 65: 'Mưa to',
+    71: 'Tuyết nhẹ', 73: 'Tuyết vừa', 75: 'Tuyết dày',
+    77: 'Hạt tuyết',
+    80: 'Mưa rào nhẹ', 81: 'Mưa rào vừa', 82: 'Mưa rào mạnh',
+    85: 'Mưa tuyết nhẹ', 86: 'Mưa tuyết nặng',
+    95: 'Dông bão', 96: 'Dông có mưa đá', 99: 'Dông mưa đá lớn'
+  };
+  return descs[code] || 'Không rõ';
+}
+
+function show(id) { document.getElementById(id).classList.remove('hidden'); }
+function hide(id) { document.getElementById(id).classList.add('hidden'); }
+
+// ─── PWA INSTALL ───────────────────────────────────────────────────
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  setTimeout(() => document.getElementById('installBanner').classList.add('show'), 3000);
+});
+
+document.getElementById('installBtn').addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const result = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById('installBanner').classList.remove('show');
+});
+
+function dismissInstall() {
+  document.getElementById('installBanner').classList.remove('show');
+}
+
+// ─── SERVICE WORKER ────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+
+// ─── START ─────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>

@@ -15,6 +15,7 @@
 - Nghĩa là: ai có **email + mật khẩu** của tài khoản Supabase đều có thể xem được **toàn bộ** dữ liệu (không riêng của 1 khách hàng), nếu họ tự đăng nhập trực tiếp bằng tài khoản đó thay vì dùng app này.
 - Vì vậy: **chỉ chủ vựa mới nên biết email/mật khẩu Supabase**, tự tay đăng nhập vào máy khách hàng, và **không chia sẻ mật khẩu Supabase cho khách hàng** — họ chỉ cần Mã KH.
 - Đây là giải pháp đơn giản, phù hợp quy mô nhỏ giữa các bên tin tưởng nhau. Nếu cần phân quyền chặt chẽ hơn (mỗi khách hàng chỉ được server cho phép xem đúng dữ liệu của mình, kể cả khi biết mật khẩu), cần nâng cấp lên cơ chế Row Level Security (RLS) theo khách hàng — phức tạp hơn, có thể làm ở phiên bản sau nếu cần.
+- **Chế độ quản trị (từ v1.1)**: nếu ai đó nhập đúng **Mã quản trị** (mật khẩu quản trị của app máy chủ) vào ô "Mã khách hàng", họ sẽ xem được **toàn bộ** người bán chứ không chỉ 1 người. Vì vậy Mã quản trị càng cần được giữ kín hơn Mã khách hàng thông thường.
 
 ## Triển khai
 
@@ -28,4 +29,5 @@ nguyentai219.github.io/XemSoKhachHang/
 
 | Phiên bản | Ngày | Thay đổi |
 |---|---|---|
+| **v1.1** | 2026-07 | Gộp toàn bộ nút "Đăng xuất" và "Tra cứu mã khác" thành 1 menu ⚙️ Cài đặt (icon bánh răng ở góc trên, thay cho nút Đăng xuất cũ). Mã khách hàng đã nhập được **lưu lại**, không tự thoát khi tải lại trang — chỉ thoát khi chọn "Tra cứu mã khác" hoặc "Đăng xuất tài khoản đồng bộ" trong Cài đặt. Tự động tải lại trang mỗi 10 giây để lấy dữ liệu mới (bỏ qua nếu đang gõ dở ô nhập liệu). Đổi câu từ hướng tới vai trò **người bán mủ** (người dùng app này). Thêm **Chế độ quản trị**: nhập đúng Mã quản trị của app máy chủ vào ô Mã khách hàng sẽ vào màn hình có menu chọn bất kỳ người bán nào để xem toàn bộ ghi chép chi tiết (cần app máy chủ đồng bộ `admin_pw` — nâng cấp từ v1.a2) |
 | **v1.0** | 2026-07 | Bản đầu tiên: đăng nhập Supabase (chung tài khoản với máy chủ), nhập Mã khách hàng để xem Lịch sử Thu Mua (ngày, KG, độ/loại, giá, thành tiền + tổng), Lịch sử Gửi sổ (ngày, KG, độ/loại, thành tiền, trạng thái chốt sổ + tổng chưa chốt), Lịch sử Ứng tiền (ngày, số tiền, nội dung, trạng thái chốt + tổng chưa chốt). Chỉ đọc dữ liệu, không có chức năng chỉnh sửa. PWA cài được ra màn hình chính, hoạt động Network-First để luôn lấy bản mới nhất. |

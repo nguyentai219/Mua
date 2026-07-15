@@ -1,4 +1,4 @@
-const CACHE = 'xem-so-kh-v1.0';
+const CACHE = 'xem-so-kh-v1.1';
 const FILES = ['/XemSoKhachHang/','/XemSoKhachHang/index.html','/XemSoKhachHang/manifest.json','/XemSoKhachHang/icon-192.png','/XemSoKhachHang/icon-512.png','/XemSoKhachHang/apple-touch-icon.png'];
 
 self.addEventListener('install', e => {

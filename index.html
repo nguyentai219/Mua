@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<title>Xem Sổ Khách Hàng v1.0</title>
+<title>Xem Sổ Khách Hàng v1.1</title>
 <meta name="theme-color" content="#1a472a">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -14,7 +14,7 @@
   --gd:#1a472a;--gm:#2d6a4f;--gl:#40916c;--gp:#74c69d;--gb:#d8f3dc;
   --g50:#f8faf9;--g100:#f0f4f2;--g200:#e0e8e4;--g400:#9ab0a5;--g600:#5a7a6a;--g800:#2d3d36;
   --red:#dc2626;--gold:#d97706;
-  --s1:0 1px 4px rgba(0,0,0,.1);--s2:0 4px 16px rgba(0,0,0,.12);
+  --s1:0 1px 4px rgba(0,0,0,.1);--s2:0 4px 16px rgba(0,0,0,.12);--s3:0 8px 32px rgba(0,0,0,.25);
   --r:12px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -28,9 +28,11 @@ body{font-family:'Be Vietnam Pro',sans-serif;background:var(--g50);color:var(--g
 .fi{width:100%;padding:12px 14px;border:1.5px solid var(--g200);border-radius:var(--r);font-family:'Be Vietnam Pro',sans-serif;font-size:15px;margin-bottom:14px;background:#fff}
 .fi:focus{outline:none;border-color:var(--gl)}
 .fi-id{text-align:center;font-size:22px;font-weight:800;letter-spacing:4px;text-transform:uppercase;color:var(--gd)}
+select.fi{-webkit-appearance:none;cursor:pointer}
 .btn{width:100%;padding:13px;border:none;border-radius:var(--r);font-family:'Be Vietnam Pro',sans-serif;font-size:14.5px;font-weight:700;cursor:pointer}
 .btn-main{background:linear-gradient(135deg,var(--gd),var(--gm));color:#fff}
 .btn-out{background:var(--g100);color:var(--g600);margin-top:10px}
+.btn-plain{background:none;color:var(--g600);margin-top:4px}
 .btn:disabled{opacity:.55}
 .err{color:var(--red);font-size:12.5px;font-weight:700;margin:-6px 0 12px;display:none}
 .hint{font-size:11.5px;color:var(--g600);margin-bottom:14px;line-height:1.5}
@@ -40,6 +42,7 @@ body{font-family:'Be Vietnam Pro',sans-serif;background:var(--g50);color:var(--g
 @keyframes sp{to{transform:rotate(360deg)}}
 .cust-name{font-size:18px;font-weight:800;color:var(--gd)}
 .cust-id{font-size:11.5px;color:var(--g600);margin-top:2px;letter-spacing:1px}
+.admin-tag{display:inline-block;background:#fef3c7;color:#92400e;font-size:11px;font-weight:800;padding:4px 10px;border-radius:8px}
 .sec-title{font-size:12.5px;font-weight:700;color:var(--gd);margin:18px 0 8px;display:flex;align-items:center;gap:6px}
 .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 table{width:100%;border-collapse:collapse}
@@ -57,7 +60,11 @@ tr.foot td{font-weight:800;border-top:2px solid var(--g200);color:var(--g800)}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#2d3d36;color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90%;text-align:center}
 .toast.show{opacity:1}
 .top-actions{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
-.link-btn{background:none;border:none;color:rgba(255,255,255,.85);font-size:12px;font-weight:700;cursor:pointer;padding:4px 0}
+.icon-btn{background:rgba(255,255,255,.15);border:none;color:#fff;font-size:17px;width:34px;height:34px;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
+.modal-ov.show{display:flex}
+.settings-box{background:#fff;border-radius:16px;padding:20px;width:100%;max-width:360px;box-shadow:var(--s3)}
+.settings-title{font-size:15px;font-weight:800;color:var(--gd);margin-bottom:14px}
 </style>
 </head>
 <body>
@@ -65,9 +72,9 @@ tr.foot td{font-weight:800;border-top:2px solid var(--g200);color:var(--g800)}
 <div class="header">
   <div class="top-actions">
     <div class="header-title">📇 Xem Sổ Khách Hàng</div>
-    <button class="link-btn" id="btn-logout-top" style="display:none" onclick="doLogout()">Đăng xuất</button>
+    <button class="icon-btn" id="btn-settings-top" style="display:none" onclick="openSettings()">⚙️</button>
   </div>
-  <div class="header-sub" id="header-sub">Mua Bán Mủ Cao Su — tra cứu sổ sách của riêng bạn</div>
+  <div class="header-sub" id="header-sub">Mua Bán Mủ Cao Su — dành cho người bán tra cứu sổ sách của mình</div>
 </div>
 
 <div class="page">
@@ -75,7 +82,7 @@ tr.foot td{font-weight:800;border-top:2px solid var(--g200);color:var(--g800)}
   <!-- MÀN ĐĂNG NHẬP TÀI KHOẢN ĐỒNG BỘ (chỉ cần làm 1 lần trên máy) -->
   <div class="screen" id="scr-login">
     <div class="card">
-      <div class="hint">📌 Bước này chỉ cần làm <b>1 lần duy nhất</b> trên máy này. Liên hệ chủ vựa để lấy tài khoản đăng nhập (email/mật khẩu) nếu chưa có.</div>
+      <div class="hint">📌 Ứng dụng dành cho <b>người bán mủ</b> tra cứu sổ sách của mình. Bước đăng nhập này chỉ cần làm <b>1 lần duy nhất</b> trên máy này — liên hệ chủ vựa để lấy tài khoản đăng nhập (email/mật khẩu) nếu chưa có.</div>
       <label class="fl">Email tài khoản</label>
       <input type="email" id="login-email" class="fi" placeholder="email@vidu.com" autocomplete="username">
       <label class="fl">Mật khẩu</label>
@@ -88,20 +95,33 @@ tr.foot td{font-weight:800;border-top:2px solid var(--g200);color:var(--g800)}
   <!-- MÀN NHẬP MÃ KHÁCH HÀNG -->
   <div class="screen" id="scr-lookup">
     <div class="card">
-      <div class="hint">Nhập <b>Mã khách hàng</b> do chủ vựa cung cấp để xem sổ Thu Mua, Gửi sổ và Ứng tiền của riêng bạn.</div>
+      <div class="hint">Chào người bán! Nhập <b>Mã khách hàng</b> mà chủ vựa đã cung cấp cho bạn để xem sổ Thu Mua, Gửi sổ và Ứng tiền của mình.</div>
       <label class="fl">Mã khách hàng</label>
-      <input type="text" id="lookup-id" class="fi fi-id" placeholder="ABCDE" maxlength="8" autocomplete="off" onkeydown="if(event.key==='Enter')traCuu()">
+      <input type="text" id="lookup-id" class="fi fi-id" placeholder="ABCDE" maxlength="10" autocomplete="off" onkeydown="if(event.key==='Enter')traCuu()">
       <div class="err" id="lookup-err"></div>
       <button class="btn btn-main" id="btn-lookup" onclick="traCuu()">🔍 Xem sổ của tôi</button>
-      <button class="btn btn-out" onclick="doLogout()">Đăng xuất tài khoản đồng bộ</button>
     </div>
   </div>
 
-  <!-- MÀN HIỂN THỊ DỮ LIỆU KHÁCH HÀNG -->
+  <!-- MÀN HIỂN THỊ DỮ LIỆU -->
   <div class="screen" id="scr-data">
-    <div class="card">
+
+    <div class="card" id="normal-header-card">
       <div class="cust-name" id="data-ten"></div>
       <div class="cust-id" id="data-id"></div>
+    </div>
+
+    <div class="card" id="admin-header-card" style="display:none">
+      <div class="admin-tag">🔑 Chế độ quản trị — xem được mọi người bán</div>
+      <label class="fl" style="margin-top:12px">Chọn người bán cần xem</label>
+      <select id="admin-select" class="fi" onchange="onAdminSelectChange()" style="margin-bottom:0"></select>
+    </div>
+
+    <div id="data-empty-hint" class="card" style="display:none">
+      <div class="empty">👆 Chọn 1 người bán ở trên để xem sổ chi tiết</div>
+    </div>
+
+    <div class="card" id="sum-card" style="display:none">
       <div class="sum-grid">
         <div class="sum-box"><div class="sum-lbl">📥 Tổng Thu Mua</div><div class="sum-val" style="color:var(--gd)" id="sum-mua">0đ</div></div>
         <div class="sum-box"><div class="sum-lbl">📒 Gửi sổ (chưa chốt)</div><div class="sum-val" style="color:var(--gold)" id="sum-sg">0đ</div></div>
@@ -110,25 +130,33 @@ tr.foot td{font-weight:800;border-top:2px solid var(--g200);color:var(--g800)}
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" id="card-mua" style="display:none">
       <div class="sec-title">📥 Lịch sử Thu Mua (<span id="cnt-mua">0</span>)</div>
       <div class="tbl-wrap" id="tbl-mua"></div>
     </div>
 
-    <div class="card">
+    <div class="card" id="card-sg" style="display:none">
       <div class="sec-title">📒 Lịch sử Gửi sổ (<span id="cnt-sg">0</span>)</div>
       <div class="tbl-wrap" id="tbl-sg"></div>
     </div>
 
-    <div class="card">
+    <div class="card" id="card-su" style="display:none">
       <div class="sec-title">💵 Lịch sử Ứng tiền (<span id="cnt-su">0</span>)</div>
       <div class="tbl-wrap" id="tbl-su"></div>
     </div>
 
-    <button class="btn btn-main" onclick="backToLookup()">🔍 Tra cứu mã khác</button>
-    <button class="btn btn-out" onclick="doLogout()">Đăng xuất tài khoản đồng bộ</button>
   </div>
 
+</div>
+
+<!-- MENU CÀI ĐẶT -->
+<div class="modal-ov" id="settings-ov" onclick="if(event.target===this) closeSettings()">
+  <div class="settings-box">
+    <div class="settings-title">⚙️ Cài đặt</div>
+    <button class="btn btn-out" id="btn-switch-code" onclick="onSwitchCode()">🔍 Tra cứu mã khác</button>
+    <button class="btn btn-out" onclick="doLogout()">🚪 Đăng xuất tài khoản đồng bộ</button>
+    <button class="btn btn-plain" onclick="closeSettings()">Đóng</button>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -136,16 +164,24 @@ tr.foot td{font-weight:800;border-top:2px solid var(--g200);color:var(--g800)}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" defer></script>
 <script>
 // ============================================================
-// XEM SỔ KHÁCH HÀNG v1.0 — app đồng hành (máy khách) của "Mua Bán Mủ Cao Su"
+// XEM SỔ KHÁCH HÀNG v1.1 — app đồng hành (máy khách) của "Mua Bán Mủ Cao Su"
+// Dành cho NGƯỜI BÁN mủ tra cứu sổ Thu Mua/Gửi/Ứng của riêng mình.
 // Đăng nhập CHUNG 1 tài khoản Supabase với máy chủ (chủ vựa), chỉ ĐỌC dữ liệu.
-// Khách hàng nhập đúng Mã khách hàng (do chủ vựa cấp) để xem sổ của riêng mình,
-// không xem được dữ liệu của khách hàng khác.
+// Nhập đúng Mã khách hàng để xem sổ của riêng mình, không xem được người khác.
+// Nhập đúng MÃ QUẢN TRỊ (của app máy chủ) sẽ vào chế độ quản trị: xem được mọi người bán.
+// Mã đã nhập + phiên đăng nhập được LƯU LẠI, không tự thoát khi tải lại trang.
 // ============================================================
 
 var SB_URL = 'https://tfxtxtwfeepxgzbxtafv.supabase.co';
 var SB_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmeHR4dHdmZWVweGd6Ynh0YWZ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MDMxODMsImV4cCI6MjA5OTI3OTE4M30.PQbSxACwlPJfDBWLCMaTb44UHbHcPsborEscZMKRtCE';
+var CODE_KEY = 'xskh_code';       // Mã khách hàng (hoặc mã quản trị) đã xác thực thành công lần gần nhất
+var ADMIN_SEL_KEY = 'xskh_admin_sel'; // Người bán đang xem trong chế độ quản trị
+var ADMIN_PW_FALLBACK = '28082008';   // Trùng với mật khẩu quản trị mặc định bên máy chủ
+
 var sbClient = null;
 var sbUser = null;
+var isAdminMode = false;
+var lastData = null; // cache dữ liệu vừa tải, dùng khi đổi người xem trong chế độ quản trị
 
 function toast(msg){
   var t = document.getElementById('toast');
@@ -158,10 +194,37 @@ function showScreen(name){
   ['login','lookup','data'].forEach(function(s){
     document.getElementById('scr-'+s).classList.toggle('active', s===name);
   });
-  document.getElementById('btn-logout-top').style.display = (name==='login') ? 'none' : 'inline-block';
+  document.getElementById('btn-settings-top').style.display = (name==='login') ? 'none' : 'inline-flex';
   document.getElementById('header-sub').textContent = (name==='login')
-    ? 'Mua Bán Mủ Cao Su — tra cứu sổ sách của riêng bạn'
-    : (sbUser && sbUser.email ? ('Đã đăng nhập: ' + sbUser.email) : '');
+    ? 'Mua Bán Mủ Cao Su — dành cho người bán tra cứu sổ sách của mình'
+    : (sbUser && sbUser.email ? ('Đã kết nối: ' + sbUser.email) : '');
+}
+
+function openSettings(){ document.getElementById('settings-ov').classList.add('show'); }
+function closeSettings(){ document.getElementById('settings-ov').classList.remove('show'); }
+function onSwitchCode(){
+  closeSettings();
+  localStorage.removeItem(CODE_KEY);
+  localStorage.removeItem(ADMIN_SEL_KEY);
+  isAdminMode = false;
+  document.getElementById('lookup-id').value = '';
+  document.getElementById('lookup-err').style.display = 'none';
+  showScreen('lookup');
+}
+function doLogout(){
+  closeSettings();
+  if (!sbClient) return;
+  sbClient.auth.signOut().then(function(){
+    sbUser = null;
+    isAdminMode = false;
+    localStorage.removeItem(CODE_KEY);
+    localStorage.removeItem(ADMIN_SEL_KEY);
+    document.getElementById('login-email').value = '';
+    document.getElementById('login-pass').value = '';
+    document.getElementById('lookup-id').value = '';
+    showScreen('login');
+    toast('Đã đăng xuất');
+  });
 }
 
 function initSupabase(){
@@ -169,8 +232,14 @@ function initSupabase(){
   sbClient = window.supabase.createClient(SB_URL, SB_ANON_KEY);
   sbClient.auth.getSession().then(function(res){
     var session = res.data && res.data.session;
-    if (session && session.user) { sbUser = session.user; showScreen('lookup'); }
-    else { showScreen('login'); }
+    if (session && session.user) {
+      sbUser = session.user;
+      var savedCode = localStorage.getItem(CODE_KEY);
+      showScreen('lookup');
+      if (savedCode) { traCuu(savedCode); }
+    } else {
+      showScreen('login');
+    }
   }).catch(function(){ showScreen('login'); });
 }
 initSupabase();
@@ -200,24 +269,6 @@ function doLogin(){
   });
 }
 
-function doLogout(){
-  if (!sbClient) return;
-  sbClient.auth.signOut().then(function(){
-    sbUser = null;
-    document.getElementById('login-email').value = '';
-    document.getElementById('login-pass').value = '';
-    document.getElementById('lookup-id').value = '';
-    showScreen('login');
-    toast('Đã đăng xuất');
-  });
-}
-
-function backToLookup(){
-  document.getElementById('lookup-id').value = '';
-  document.getElementById('lookup-err').style.display = 'none';
-  showScreen('lookup');
-}
-
 function fmtVND(n){ return Math.round(n||0).toLocaleString('vi-VN'); }
 function fmtDateSmart(ds){
   if (!ds) return '';
@@ -242,13 +293,14 @@ function fetchAllData(cb, errCb){
       mua: map['gd3_mua'] || [],
       sg: map['sg3'] || [],
       su: map['su_data'] || [],
-      khIds: map['kh_ids'] || {}
+      khIds: map['kh_ids'] || {},
+      adminPw: map['admin_pw']
     });
   }).catch(function(e){ errCb && errCb(e.message); });
 }
 
-function traCuu(){
-  var idRaw = (document.getElementById('lookup-id').value || '').trim().toUpperCase();
+function traCuu(codeOverride){
+  var idRaw = (codeOverride != null ? codeOverride : (document.getElementById('lookup-id').value || '')).trim();
   var errEl = document.getElementById('lookup-err');
   errEl.style.display = 'none';
   if (!idRaw) { errEl.textContent = '⚠️ Vui lòng nhập Mã khách hàng'; errEl.style.display = 'block'; return; }
@@ -256,14 +308,69 @@ function traCuu(){
   setBtnLoading('btn-lookup', true, '🔍 Xem sổ của tôi');
   fetchAllData(function(data){
     setBtnLoading('btn-lookup', false, '🔍 Xem sổ của tôi');
+    lastData = data;
+    var adminPw = String(data.adminPw != null ? data.adminPw : ADMIN_PW_FALLBACK).trim();
+
+    if (idRaw === adminPw) {
+      // ── CHẾ ĐỘ QUẢN TRỊ ──
+      isAdminMode = true;
+      localStorage.setItem(CODE_KEY, idRaw);
+      renderAdminHome(data);
+      showScreen('data');
+      return;
+    }
+
+    var idUpper = idRaw.toUpperCase();
     var ten = null;
-    for (var t in data.khIds) { if (String(data.khIds[t]||'').toUpperCase() === idRaw) { ten = t; break; } }
+    for (var t in data.khIds) { if (String(data.khIds[t]||'').toUpperCase() === idUpper) { ten = t; break; } }
     if (!ten) { errEl.textContent = '❌ Không tìm thấy khách hàng với mã này. Kiểm tra lại mã hoặc hỏi chủ vựa.'; errEl.style.display = 'block'; return; }
-    renderCustomerData(ten, idRaw, data);
+
+    isAdminMode = false;
+    localStorage.setItem(CODE_KEY, idRaw);
+    document.getElementById('admin-header-card').style.display = 'none';
+    document.getElementById('normal-header-card').style.display = '';
+    document.getElementById('data-empty-hint').style.display = 'none';
+    renderCustomerData(ten, idUpper, data);
     showScreen('data');
   }, function(msg){
     setBtnLoading('btn-lookup', false, '🔍 Xem sổ của tôi');
     errEl.textContent = '❌ Lỗi tải dữ liệu: ' + msg; errEl.style.display = 'block';
+  });
+}
+
+function renderAdminHome(data){
+  document.getElementById('admin-header-card').style.display = '';
+  document.getElementById('normal-header-card').style.display = 'none';
+  var sel = document.getElementById('admin-select');
+  var names = Object.keys(data.khIds||{}).sort(function(a,b){ return a.localeCompare(b,'vi'); });
+  var savedSel = localStorage.getItem(ADMIN_SEL_KEY) || '';
+  sel.innerHTML = '<option value="">-- Chọn người bán --</option>' + names.map(function(n){
+    var esc = n.replace(/"/g,'&quot;');
+    return '<option value="'+esc+'"'+(n===savedSel?' selected':'')+'>'+n+'</option>';
+  }).join('');
+  if (savedSel && names.indexOf(savedSel) >= 0) {
+    document.getElementById('data-empty-hint').style.display = 'none';
+    renderCustomerData(savedSel, null, data, true);
+  } else {
+    showDataCards(false);
+    document.getElementById('data-empty-hint').style.display = '';
+  }
+}
+function onAdminSelectChange(){
+  var ten = document.getElementById('admin-select').value;
+  if (!ten) {
+    localStorage.removeItem(ADMIN_SEL_KEY);
+    showDataCards(false);
+    document.getElementById('data-empty-hint').style.display = '';
+    return;
+  }
+  localStorage.setItem(ADMIN_SEL_KEY, ten);
+  document.getElementById('data-empty-hint').style.display = 'none';
+  renderCustomerData(ten, null, lastData, true);
+}
+function showDataCards(show){
+  ['sum-card','card-mua','card-sg','card-su'].forEach(function(id){
+    document.getElementById(id).style.display = show ? '' : 'none';
   });
 }
 
@@ -291,10 +398,13 @@ function rowsToTable(rows, cols, footLabel, footKey){
   return '<table>' + head + body + foot + '</table>';
 }
 
-function renderCustomerData(ten, id, data){
-  document.getElementById('data-ten').textContent = '👤 ' + ten;
-  document.getElementById('data-id').textContent = 'Mã KH: ' + id;
+function renderCustomerData(ten, id, data, isAdminCall){
+  if (!isAdminCall) {
+    document.getElementById('data-ten').textContent = '👤 ' + ten;
+    document.getElementById('data-id').textContent = 'Mã KH: ' + id;
+  }
   document.getElementById('sum-time').textContent = new Date().toLocaleString('vi-VN');
+  showDataCards(true);
 
   var mua = (data.mua||[]).filter(function(r){ return r.ten === ten; }).sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
   var sg  = (data.sg||[]).filter(function(r){ return r.ten === ten; }).sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
@@ -336,6 +446,13 @@ function renderCustomerData(ten, id, data){
   document.getElementById('tbl-sg').innerHTML  = rowsToTable(sg,  colsSG, 'Tổng cộng', 'tt');
   document.getElementById('tbl-su').innerHTML  = rowsToTable(su,  colsSU, 'Tổng cộng', 'tien');
 }
+
+// Tự tải lại trang mỗi 10 giây để luôn lấy dữ liệu mới nhất — bỏ qua nếu đang gõ dở 1 ô nhập liệu
+setInterval(function(){
+  var ae = document.activeElement;
+  if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'SELECT')) return;
+  location.reload();
+}, 10000);
 
 // Đăng ký Service Worker (offline shell)
 if ('serviceWorker' in navigator) {

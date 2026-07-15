@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<title>Xem Sổ Khách Hàng v1.3</title>
+<title>Xem Sổ Khách Hàng v1.4</title>
 <meta name="theme-color" content="#1a472a">
 <meta name="format-detection" content="telephone=no,email=no,address=no">
 <meta name="mobile-web-app-capable" content="yes">
@@ -72,6 +72,13 @@ tr.foot td{font-weight:800;border-top:2px solid var(--g200);color:var(--g800)}
 .modal-ov.show{display:flex}
 .settings-box{background:#fff;border-radius:16px;padding:20px;width:100%;max-width:360px;box-shadow:var(--s3)}
 .settings-title{font-size:15px;font-weight:800;color:var(--gd);margin-bottom:14px}
+.settings-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}
+.switch{position:relative;display:inline-block;width:44px;height:24px;flex:0 0 auto}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;cursor:pointer;inset:0;background:var(--g200);border-radius:24px;transition:.2s}
+.slider:before{position:absolute;content:"";height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+input:checked + .slider{background:var(--gl)}
+input:checked + .slider:before{transform:translateX(20px)}
 </style>
 </head>
 <body>
@@ -128,18 +135,14 @@ tr.foot td{font-weight:800;border-top:2px solid var(--g200);color:var(--g800)}
       <div class="empty">👆 Chọn 1 người bán ở trên để xem sổ chi tiết</div>
     </div>
 
-    <div class="card" id="sum-card" style="display:none">
-      <div class="sum-grid">
-        <div class="sum-box"><div class="sum-lbl">📥 Tổng Thu Mua</div><div class="sum-val" style="color:var(--gd)" id="sum-mua">0đ</div></div>
-        <div class="sum-box"><div class="sum-lbl">📒 Gửi sổ (chưa chốt)</div><div class="sum-val" style="color:var(--gold)" id="sum-sg">0đ</div></div>
-        <div class="sum-box"><div class="sum-lbl">💵 Đã ứng (chưa chốt)</div><div class="sum-val" style="color:var(--red)" id="sum-su">0đ</div></div>
-        <div class="sum-box"><div class="sum-lbl">🕐 Cập nhật lúc</div><div class="sum-val" id="sum-time" style="font-size:12px;color:var(--g600)">--</div></div>
-      </div>
+    <!-- Lịch sử chính: Thu Mua (người bán) hoặc Bán (người mua lại hàng) — luôn ngay dưới tên -->
+    <div class="card" id="card-primary" style="display:none">
+      <div class="sec-title" id="primary-title">📥 Lịch sử Thu Mua (<span id="cnt-primary">0</span>)</div>
+      <div class="tbl-wrap" id="tbl-primary"></div>
     </div>
 
-    <div class="card" id="card-mua" style="display:none">
-      <div class="sec-title">📥 Lịch sử Thu Mua (<span id="cnt-mua">0</span>)</div>
-      <div class="tbl-wrap" id="tbl-mua"></div>
+    <div class="card" id="sum-card" style="display:none">
+      <div class="sum-grid" id="sum-grid"></div>
     </div>
 
     <div class="card" id="card-sg" style="display:none">
@@ -160,6 +163,26 @@ tr.foot td{font-weight:800;border-top:2px solid var(--g200);color:var(--g800)}
 <div class="modal-ov" id="settings-ov" onclick="if(event.target===this) closeSettings()">
   <div class="settings-box">
     <div class="settings-title">⚙️ Cài đặt</div>
+
+    <div class="settings-toggle-row">
+      <label class="fl" style="margin:0">🔄 Tự động làm mới dữ liệu</label>
+      <label class="switch">
+        <input type="checkbox" id="chk-autorefresh" onchange="onAutoRefreshToggle()">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div id="refresh-interval-wrap" style="margin-top:10px">
+      <label class="fl">Làm mới sau mỗi</label>
+      <select id="sel-refresh-sec" class="fi" onchange="onRefreshSecChange()" style="margin-bottom:6px">
+        <option value="5">5 giây</option>
+        <option value="10">10 giây</option>
+        <option value="15">15 giây</option>
+        <option value="30">30 giây</option>
+        <option value="60">1 phút</option>
+        <option value="300">5 phút</option>
+      </select>
+    </div>
+
     <button class="btn btn-out" id="btn-switch-code" onclick="onSwitchCode()">🔍 Tra cứu mã khác</button>
     <button class="btn btn-out" onclick="doLogout()">🚪 Đăng xuất tài khoản đồng bộ</button>
     <button class="btn btn-plain" onclick="closeSettings()">Đóng</button>
@@ -184,6 +207,10 @@ var SB_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIs
 var CODE_KEY = 'xskh_code';       // Mã khách hàng (hoặc mã quản trị) đã xác thực thành công lần gần nhất
 var ADMIN_SEL_KEY = 'xskh_admin_sel'; // Người bán đang xem trong chế độ quản trị
 var ADMIN_PW_FALLBACK = '28082008';   // Trùng với mật khẩu quản trị mặc định bên máy chủ
+var AUTOREFRESH_KEY = 'xskh_autorefresh'; // '1' bật, '0' tắt — mặc định bật
+var REFRESH_SEC_KEY = 'xskh_refresh_sec';  // số giây giữa mỗi lần làm mới
+var DEFAULT_REFRESH_SEC = 10;
+var refreshTimer = null;
 
 var sbClient = null;
 var sbUser = null;
@@ -207,8 +234,64 @@ function showScreen(name){
     : (sbUser && sbUser.email ? ('Đã kết nối: ' + sbUser.email) : '');
 }
 
-function openSettings(){ document.getElementById('settings-ov').classList.add('show'); }
+function openSettings(){
+  document.getElementById('chk-autorefresh').checked = getAutoRefreshOn();
+  document.getElementById('sel-refresh-sec').value = String(getRefreshSec());
+  document.getElementById('refresh-interval-wrap').style.display = getAutoRefreshOn() ? '' : 'none';
+  document.getElementById('settings-ov').classList.add('show');
+}
 function closeSettings(){ document.getElementById('settings-ov').classList.remove('show'); }
+
+// ── TỰ ĐỘNG LÀM MỚI (làm mới ngầm, không tải lại cả trang để tránh chớp màn hình) ──
+function getAutoRefreshOn(){
+  var v = localStorage.getItem(AUTOREFRESH_KEY);
+  return v === null ? true : v === '1';
+}
+function getRefreshSec(){
+  var v = parseInt(localStorage.getItem(REFRESH_SEC_KEY), 10);
+  return (v && v > 0) ? v : DEFAULT_REFRESH_SEC;
+}
+function onAutoRefreshToggle(){
+  var on = document.getElementById('chk-autorefresh').checked;
+  localStorage.setItem(AUTOREFRESH_KEY, on ? '1' : '0');
+  document.getElementById('refresh-interval-wrap').style.display = on ? '' : 'none';
+  setupAutoRefresh();
+  toast(on ? '✅ Đã bật tự động làm mới' : '⏸️ Đã tắt tự động làm mới');
+}
+function onRefreshSecChange(){
+  var sec = parseInt(document.getElementById('sel-refresh-sec').value, 10) || DEFAULT_REFRESH_SEC;
+  localStorage.setItem(REFRESH_SEC_KEY, String(sec));
+  setupAutoRefresh();
+  toast('🔄 Làm mới mỗi ' + (sec >= 60 ? (sec/60) + ' phút' : sec + ' giây'));
+}
+function setupAutoRefresh(){
+  if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
+  if (!getAutoRefreshOn()) return;
+  var sec = getRefreshSec();
+  refreshTimer = setInterval(function(){
+    var ae = document.activeElement;
+    if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'SELECT')) return; // đang gõ dở, bỏ qua lượt này
+    silentRefresh();
+  }, sec * 1000);
+}
+// Làm mới ngầm: tải lại dữ liệu từ Supabase và vẽ lại đúng màn đang xem — KHÔNG reload cả trang nên không chớp màn hình
+function silentRefresh(){
+  if (!sbUser) return;
+  if (!document.getElementById('scr-data').classList.contains('active')) return; // chỉ làm mới khi đang xem sổ
+  fetchAllData(function(data){
+    lastData = data;
+    if (isAdminMode) {
+      renderAdminHome(data);
+    } else {
+      var savedCode = localStorage.getItem(CODE_KEY);
+      if (!savedCode) return;
+      var idUpper = savedCode.toUpperCase();
+      var ten = null;
+      for (var t in data.khIds) { if (String(data.khIds[t]||'').toUpperCase() === idUpper) { ten = t; break; } }
+      if (ten) renderCustomerData(ten, idUpper, data);
+    }
+  }, function(){ /* lỗi mạng tạm thời: bỏ qua, thử lại ở lượt sau */ });
+}
 function onSwitchCode(){
   closeSettings();
   localStorage.removeItem(CODE_KEY);
@@ -298,6 +381,7 @@ function fetchAllData(cb, errCb){
     (res.data||[]).forEach(function(r){ map[r.data_key] = r.data_value; });
     cb({
       mua: map['gd3_mua'] || [],
+      ban: map['gd3_ban'] || [],
       sg: map['sg3'] || [],
       su: map['su_data'] || [],
       khIds: map['kh_ids'] || {},
@@ -376,9 +460,12 @@ function onAdminSelectChange(){
   renderCustomerData(ten, null, lastData, true);
 }
 function showDataCards(show){
-  ['sum-card','card-mua','card-sg','card-su'].forEach(function(id){
-    document.getElementById(id).style.display = show ? '' : 'none';
-  });
+  if (!show) {
+    ['sum-card','card-primary','card-sg','card-su'].forEach(function(id){
+      document.getElementById(id).style.display = 'none';
+    });
+  }
+  // Khi show=true: từng thẻ tự quyết định hiện/ẩn bên trong renderCustomerData tuỳ có dữ liệu hay không
 }
 
 function rowsToTable(rows, cols, footLabel, footKey){
@@ -410,23 +497,14 @@ function renderCustomerData(ten, id, data, isAdminCall){
     document.getElementById('data-ten').textContent = '👤 ' + ten;
     document.getElementById('data-id').textContent = 'Mã KH: ' + id;
   }
-  document.getElementById('sum-time').textContent = new Date().toLocaleString('vi-VN');
-  showDataCards(true);
 
   var mua = (data.mua||[]).filter(function(r){ return r.ten === ten; }).sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+  var ban = (data.ban||[]).filter(function(r){ return r.ten === ten; }).sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
   var sg  = (data.sg||[]).filter(function(r){ return r.ten === ten; }).sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
   var su  = (data.su||[]).filter(function(r){ return r.ten === ten; }).sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
 
-  var tongMua = mua.reduce(function(s,x){ return s + (x.tt||0); }, 0);
-  var tongSgMo = sg.filter(function(r){ return !r.chot; }).reduce(function(s,x){ return s + (x.tt||0); }, 0);
-  var tongSuMo = su.filter(function(r){ return !r.chot; }).reduce(function(s,x){ return s + (x.tien||0); }, 0);
-
-  document.getElementById('sum-mua').textContent = fmtVND(tongMua) + 'đ';
-  document.getElementById('sum-sg').textContent = fmtVND(tongSgMo) + 'đ';
-  document.getElementById('sum-su').textContent = fmtVND(tongSuMo) + 'đ';
-  document.getElementById('cnt-mua').textContent = mua.length;
-  document.getElementById('cnt-sg').textContent = sg.length;
-  document.getElementById('cnt-su').textContent = su.length;
+  // Tự động phát hiện vai trò: có Bán mà không có Thu Mua -> đây là NGƯỜI MUA (đầu mối mua lại hàng)
+  var isBuyer = (mua.length === 0 && ban.length > 0);
 
   var colsGD = [
     {label:'Ngày', fmt:function(r){ return fmtDateSmart(r.date); }},
@@ -449,17 +527,39 @@ function renderCustomerData(ten, id, data, isAdminCall){
     {label:'Trạng thái', fmt:function(r){ return r.chot ? '<span class="badge badge-closed">Đã chốt</span>' : '<span class="badge badge-open">Chưa chốt</span>'; }}
   ];
 
-  document.getElementById('tbl-mua').innerHTML = rowsToTable(mua, colsGD, 'Tổng cộng', 'tt');
-  document.getElementById('tbl-sg').innerHTML  = rowsToTable(sg,  colsSG, 'Tổng cộng', 'tt');
-  document.getElementById('tbl-su').innerHTML  = rowsToTable(su,  colsSU, 'Tổng cộng', 'tien');
+  // ── LỊCH SỬ CHÍNH: Thu Mua (người bán) hoặc Bán — đổi tên cho phù hợp góc nhìn người mua lại hàng ──
+  var primaryRows = isBuyer ? ban : mua;
+  var primaryLabel = isBuyer ? '🚛 Lịch sử mua hàng từ vựa' : '📥 Lịch sử Thu Mua';
+  var primaryTotal = primaryRows.reduce(function(s,x){ return s + (x.tt||0); }, 0);
+  document.getElementById('primary-title').innerHTML = primaryLabel + ' (<span id="cnt-primary">' + primaryRows.length + '</span>)';
+  document.getElementById('tbl-primary').innerHTML = rowsToTable(primaryRows, colsGD, 'Tổng cộng', 'tt');
+  document.getElementById('card-primary').style.display = '';
+
+  // ── TỔNG QUAN: chỉ hiện các mục có dữ liệu, chú thích theo đúng vai trò ──
+  var tongSgMo = sg.filter(function(r){ return !r.chot; }).reduce(function(s,x){ return s + (x.tt||0); }, 0);
+  var tongSuMo = su.filter(function(r){ return !r.chot; }).reduce(function(s,x){ return s + (x.tien||0); }, 0);
+  var sumHtml = '<div class="sum-box"><div class="sum-lbl">' + (isBuyer ? '🚛 Tổng đã mua' : '📥 Tổng Thu Mua') + '</div><div class="sum-val" style="color:var(--gd)">' + fmtVND(primaryTotal) + 'đ</div></div>';
+  if (sg.length > 0) sumHtml += '<div class="sum-box"><div class="sum-lbl">📒 Gửi sổ (chưa chốt)</div><div class="sum-val" style="color:var(--gold)">' + fmtVND(tongSgMo) + 'đ</div></div>';
+  if (su.length > 0) sumHtml += '<div class="sum-box"><div class="sum-lbl">💵 Đã ứng (chưa chốt)</div><div class="sum-val" style="color:var(--red)">' + fmtVND(tongSuMo) + 'đ</div></div>';
+  sumHtml += '<div class="sum-box"><div class="sum-lbl">🕐 Cập nhật lúc</div><div class="sum-val" style="font-size:12px;color:var(--g600)">' + new Date().toLocaleString('vi-VN') + '</div></div>';
+  document.getElementById('sum-grid').innerHTML = sumHtml;
+  document.getElementById('sum-card').style.display = '';
+
+  // ── Gửi sổ / Ứng tiền: chỉ hiện khi thực sự có dữ liệu (tối ưu, đỡ rối cho người mua lại hàng) ──
+  document.getElementById('card-sg').style.display = sg.length > 0 ? '' : 'none';
+  if (sg.length > 0) {
+    document.getElementById('cnt-sg').textContent = sg.length;
+    document.getElementById('tbl-sg').innerHTML = rowsToTable(sg, colsSG, 'Tổng cộng', 'tt');
+  }
+  document.getElementById('card-su').style.display = su.length > 0 ? '' : 'none';
+  if (su.length > 0) {
+    document.getElementById('cnt-su').textContent = su.length;
+    document.getElementById('tbl-su').innerHTML = rowsToTable(su, colsSU, 'Tổng cộng', 'tien');
+  }
 }
 
-// Tự tải lại trang mỗi 10 giây để luôn lấy dữ liệu mới nhất — bỏ qua nếu đang gõ dở 1 ô nhập liệu
-setInterval(function(){
-  var ae = document.activeElement;
-  if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'SELECT')) return;
-  location.reload();
-}, 10000);
+// Khởi động tự động làm mới ngầm theo cấu hình đã lưu (mặc định: bật, mỗi 10 giây)
+setupAutoRefresh();
 
 // Đăng ký Service Worker (offline shell)
 if ('serviceWorker' in navigator) {

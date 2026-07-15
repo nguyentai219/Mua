@@ -1,7 +1,7 @@
 {
   "name": "Xem Sổ Khách Hàng - Mua Bán Mủ Cao Su",
   "short_name": "Sổ Khách Hàng",
-  "description": "Tra cứu sổ Thu Mua, Gửi sổ, Ứng tiền của riêng bạn bằng Mã khách hàng - dành cho người bán mủ - v1.2",
+  "description": "Tra cứu sổ Thu Mua, Gửi sổ, Ứng tiền của riêng bạn bằng Mã khách hàng - dành cho người bán mủ - v1.3",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
@@ -9,7 +9,10 @@
   "background_color": "#1a472a",
   "theme_color": "#1a472a",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
-  ]
+    { "src": "apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ],
+  "categories": ["business", "finance"],
+  "lang": "vi"
 }

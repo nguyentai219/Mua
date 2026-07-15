@@ -1,5 +1,14 @@
-const CACHE = 'xem-so-kh-v1.2';
-const FILES = ['/XemSoKhachHang/','/XemSoKhachHang/index.html','/XemSoKhachHang/manifest.json','/XemSoKhachHang/icon-192.png','/XemSoKhachHang/icon-512.png','/XemSoKhachHang/apple-touch-icon.png'];
+const CACHE = 'xem-so-kh-v1.3';
+// Dùng scope của chính service worker để tự suy ra đường dẫn — không phụ thuộc tên thư mục deploy cụ thể
+const BASE = self.registration.scope; // VD: https://nguyentai219.github.io/XemSoKhachHang/
+const FILES = [
+  BASE,
+  BASE + 'index.html',
+  BASE + 'manifest.json',
+  BASE + 'icon-192.png',
+  BASE + 'icon-512.png',
+  BASE + 'apple-touch-icon.png'
+];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).catch(()=>{}));
@@ -33,7 +42,7 @@ self.addEventListener('fetch', e => {
   } else {
     // Tài nguyên tĩnh (icon, manifest): Cache First — nhanh hơn
     e.respondWith(
-      caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match('/XemSoKhachHang/index.html')))
+      caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match(BASE + 'index.html')))
     );
   }
 });

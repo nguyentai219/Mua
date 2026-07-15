@@ -1,73 +1,39 @@
-const CACHE_NAME = 'troi-hom-nay-v1';
-const STATIC_ASSETS = [
-  './',
-  './index.html',
-  './manifest.json',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
-  'https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap'
-];
+const CACHE = 'xem-so-kh-v1.0';
+const FILES = ['/XemSoKhachHang/','/XemSoKhachHang/index.html','/XemSoKhachHang/manifest.json','/XemSoKhachHang/icon-192.png','/XemSoKhachHang/icon-512.png','/XemSoKhachHang/apple-touch-icon.png'];
 
-// Install
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS.map(url => {
-        return new Request(url, { mode: 'no-cors' });
-      })).catch(() => {
-        // Silently fail for external resources
-      });
-    })
-  );
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).catch(()=>{}));
   self.skipWaiting();
 });
 
-// Activate
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
-      );
-    })
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys().then(ks =>
+      Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))
+    )
   );
   self.clients.claim();
 });
 
-// Fetch strategy: Cache first for static, Network first for API
-self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
+self.addEventListener('fetch', e => {
+  const url = new URL(e.request.url);
+  const isHTML = e.request.destination === 'document' || url.pathname.endsWith('.html') || url.pathname.endsWith('/');
 
-  // Weather API and geolocation → Network first (real-time data)
-  if (url.hostname.includes('open-meteo.com') || url.hostname.includes('nominatim')) {
-    event.respondWith(
-      fetch(event.request)
-        .then(res => {
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then(c => c.put(event.request, clone));
-          return res;
+  if (isHTML) {
+    // HTML: Network First — luôn lấy bản mới nhất, cache làm dự phòng offline
+    e.respondWith(
+      fetch(e.request)
+        .then(response => {
+          const clone = response.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+          return response;
         })
-        .catch(() => caches.match(event.request))
+        .catch(() => caches.match(e.request))
     );
-    return;
+  } else {
+    // Tài nguyên tĩnh (icon, manifest): Cache First — nhanh hơn
+    e.respondWith(
+      caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match('/XemSoKhachHang/index.html')))
+    );
   }
-
-  // Static assets → Cache first
-  event.respondWith(
-    caches.match(event.request).then(cached => {
-      if (cached) return cached;
-      return fetch(event.request).then(res => {
-        if (res.ok) {
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then(c => c.put(event.request, clone));
-        }
-        return res;
-      }).catch(() => {
-        // Return offline page if HTML request fails
-        if (event.request.headers.get('accept')?.includes('text/html')) {
-          return caches.match('./index.html');
-        }
-      });
-    })
-  );
 });

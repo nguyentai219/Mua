@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<title>Xem Sổ Khách Hàng v1.4</title>
+<title>Xem Sổ Khách Hàng v1.6</title>
 <meta name="theme-color" content="#1a472a">
 <meta name="format-detection" content="telephone=no,email=no,address=no">
 <meta name="mobile-web-app-capable" content="yes">
@@ -56,6 +56,7 @@ table{width:100%;border-collapse:collapse}
 th{padding:6px 8px;border-bottom:1.5px solid var(--g200);text-align:left;font-size:10.5px;color:var(--g600);white-space:nowrap}
 td{padding:7px 8px;border-bottom:1px solid var(--g100);font-size:12.5px;white-space:nowrap}
 tr.foot td{font-weight:800;border-top:2px solid var(--g200);color:var(--g800)}
+td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:var(--g800);border-top:1.5px solid var(--g200);border-bottom:1.5px solid var(--g200)}
 .badge{display:inline-block;font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px}
 .badge-open{background:var(--gb);color:var(--gd)}
 .badge-closed{background:var(--g100);color:var(--g600)}
@@ -72,13 +73,6 @@ tr.foot td{font-weight:800;border-top:2px solid var(--g200);color:var(--g800)}
 .modal-ov.show{display:flex}
 .settings-box{background:#fff;border-radius:16px;padding:20px;width:100%;max-width:360px;box-shadow:var(--s3)}
 .settings-title{font-size:15px;font-weight:800;color:var(--gd);margin-bottom:14px}
-.settings-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}
-.switch{position:relative;display:inline-block;width:44px;height:24px;flex:0 0 auto}
-.switch input{opacity:0;width:0;height:0}
-.slider{position:absolute;cursor:pointer;inset:0;background:var(--g200);border-radius:24px;transition:.2s}
-.slider:before{position:absolute;content:"";height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
-input:checked + .slider{background:var(--gl)}
-input:checked + .slider:before{transform:translateX(20px)}
 </style>
 </head>
 <body>
@@ -164,25 +158,6 @@ input:checked + .slider:before{transform:translateX(20px)}
   <div class="settings-box">
     <div class="settings-title">⚙️ Cài đặt</div>
 
-    <div class="settings-toggle-row">
-      <label class="fl" style="margin:0">🔄 Tự động làm mới dữ liệu</label>
-      <label class="switch">
-        <input type="checkbox" id="chk-autorefresh" onchange="onAutoRefreshToggle()">
-        <span class="slider"></span>
-      </label>
-    </div>
-    <div id="refresh-interval-wrap" style="margin-top:10px">
-      <label class="fl">Làm mới sau mỗi</label>
-      <select id="sel-refresh-sec" class="fi" onchange="onRefreshSecChange()" style="margin-bottom:6px">
-        <option value="5">5 giây</option>
-        <option value="10">10 giây</option>
-        <option value="15">15 giây</option>
-        <option value="30">30 giây</option>
-        <option value="60">1 phút</option>
-        <option value="300">5 phút</option>
-      </select>
-    </div>
-
     <button class="btn btn-out" id="btn-switch-code" onclick="onSwitchCode()">🔍 Tra cứu mã khác</button>
     <button class="btn btn-out" onclick="doLogout()">🚪 Đăng xuất tài khoản đồng bộ</button>
     <button class="btn btn-plain" onclick="closeSettings()">Đóng</button>
@@ -207,9 +182,7 @@ var SB_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIs
 var CODE_KEY = 'xskh_code';       // Mã khách hàng (hoặc mã quản trị) đã xác thực thành công lần gần nhất
 var ADMIN_SEL_KEY = 'xskh_admin_sel'; // Người bán đang xem trong chế độ quản trị
 var ADMIN_PW_FALLBACK = '28082008';   // Trùng với mật khẩu quản trị mặc định bên máy chủ
-var AUTOREFRESH_KEY = 'xskh_autorefresh'; // '1' bật, '0' tắt — mặc định bật
-var REFRESH_SEC_KEY = 'xskh_refresh_sec';  // số giây giữa mỗi lần làm mới
-var DEFAULT_REFRESH_SEC = 10;
+var DEFAULT_REFRESH_SEC = 15;
 var refreshTimer = null;
 
 var sbClient = null;
@@ -235,44 +208,19 @@ function showScreen(name){
 }
 
 function openSettings(){
-  document.getElementById('chk-autorefresh').checked = getAutoRefreshOn();
-  document.getElementById('sel-refresh-sec').value = String(getRefreshSec());
-  document.getElementById('refresh-interval-wrap').style.display = getAutoRefreshOn() ? '' : 'none';
   document.getElementById('settings-ov').classList.add('show');
 }
 function closeSettings(){ document.getElementById('settings-ov').classList.remove('show'); }
 
-// ── TỰ ĐỘNG LÀM MỚI (làm mới ngầm, không tải lại cả trang để tránh chớp màn hình) ──
-function getAutoRefreshOn(){
-  var v = localStorage.getItem(AUTOREFRESH_KEY);
-  return v === null ? true : v === '1';
-}
-function getRefreshSec(){
-  var v = parseInt(localStorage.getItem(REFRESH_SEC_KEY), 10);
-  return (v && v > 0) ? v : DEFAULT_REFRESH_SEC;
-}
-function onAutoRefreshToggle(){
-  var on = document.getElementById('chk-autorefresh').checked;
-  localStorage.setItem(AUTOREFRESH_KEY, on ? '1' : '0');
-  document.getElementById('refresh-interval-wrap').style.display = on ? '' : 'none';
-  setupAutoRefresh();
-  toast(on ? '✅ Đã bật tự động làm mới' : '⏸️ Đã tắt tự động làm mới');
-}
-function onRefreshSecChange(){
-  var sec = parseInt(document.getElementById('sel-refresh-sec').value, 10) || DEFAULT_REFRESH_SEC;
-  localStorage.setItem(REFRESH_SEC_KEY, String(sec));
-  setupAutoRefresh();
-  toast('🔄 Làm mới mỗi ' + (sec >= 60 ? (sec/60) + ' phút' : sec + ' giây'));
-}
+// ── TỰ ĐỘNG LÀM MỚI (làm mới ngầm, không tải lại cả trang nên không chớp màn hình) ──
+// Luôn mặc định BẬT, cố định mỗi 15 giây — không có tuỳ chọn tắt hay đổi thời gian.
 function setupAutoRefresh(){
   if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
-  if (!getAutoRefreshOn()) return;
-  var sec = getRefreshSec();
   refreshTimer = setInterval(function(){
     var ae = document.activeElement;
     if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'SELECT')) return; // đang gõ dở, bỏ qua lượt này
     silentRefresh();
-  }, sec * 1000);
+  }, DEFAULT_REFRESH_SEC * 1000);
 }
 // Làm mới ngầm: tải lại dữ liệu từ Supabase và vẽ lại đúng màn đang xem — KHÔNG reload cả trang nên không chớp màn hình
 function silentRefresh(){
@@ -471,12 +419,18 @@ function showDataCards(show){
 function rowsToTable(rows, cols, footLabel, footKey){
   if (!rows.length) return '<div class="empty">Chưa có dữ liệu</div>';
   var head = '<tr>' + cols.map(function(c){ return '<th>'+c.label+'</th>'; }).join('') + '</tr>';
-  var body = rows.map(function(r){
-    return '<tr>' + cols.map(function(c){
+  var body = '';
+  var lastDate = null;
+  rows.forEach(function(r){
+    if (r.date !== lastDate) {
+      lastDate = r.date;
+      body += '<tr><td colspan="' + cols.length + '" class="date-group-row">📅 ' + fmtDateSmart(r.date) + '</td></tr>';
+    }
+    body += '<tr>' + cols.map(function(c){
       var v = c.fmt ? c.fmt(r) : (r[c.key]!=null ? r[c.key] : '');
       return '<td>'+v+'</td>';
     }).join('') + '</tr>';
-  }).join('');
+  });
   var foot = '';
   if (footKey) {
     var total = rows.reduce(function(s,x){ return s + (x[footKey]||0); }, 0);

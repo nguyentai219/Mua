@@ -1,12 +1,12 @@
 {
   "name": "Xem Sổ Khách Hàng - Mua Bán Mủ Cao Su",
   "short_name": "Sổ Khách Hàng",
-  "description": "Tra cứu sổ Thu Mua, Gửi sổ, Ứng tiền của riêng bạn bằng Mã khách hàng - dành cho người bán mủ - v1.6",
+  "description": "Tra cứu sổ Thu Mua, Gửi sổ, Ứng tiền của riêng bạn bằng Mã khách hàng - dành cho người bán mủ - v1.8",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#1a472a",
+  "background_color": "#ddc496",
   "theme_color": "#1a472a",
   "icons": [
     { "src": "apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },

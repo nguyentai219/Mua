@@ -1,4 +1,4 @@
-const CACHE = 'xem-so-kh-v1.6';
+const CACHE = 'xem-so-kh-v1.8';
 // Dùng scope của chính service worker để tự suy ra đường dẫn — không phụ thuộc tên thư mục deploy cụ thể
 const BASE = self.registration.scope; // VD: https://nguyentai219.github.io/XemSoKhachHang/
 const FILES = [
@@ -7,7 +7,8 @@ const FILES = [
   BASE + 'manifest.json',
   BASE + 'icon-192.png',
   BASE + 'icon-512.png',
-  BASE + 'apple-touch-icon.png'
+  BASE + 'apple-touch-icon.png',
+  BASE + 'splash.png'
 ];
 
 self.addEventListener('install', e => {

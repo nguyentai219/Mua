@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<title>Xem Sổ Khách Hàng v1.6</title>
+<title>Xem Sổ Khách Hàng v1.8</title>
 <meta name="theme-color" content="#1a472a">
 <meta name="format-detection" content="telephone=no,email=no,address=no">
 <meta name="mobile-web-app-capable" content="yes">
@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
-<link rel="apple-touch-startup-image" href="icon-512.png">
+<link rel="apple-touch-startup-image" href="splash.png">
 <link rel="icon" href="icon-192.png">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap');
@@ -132,6 +132,7 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
     <!-- Lịch sử chính: Thu Mua (người bán) hoặc Bán (người mua lại hàng) — luôn ngay dưới tên -->
     <div class="card" id="card-primary" style="display:none">
       <div class="sec-title" id="primary-title">📥 Lịch sử Thu Mua (<span id="cnt-primary">0</span>)</div>
+      <div id="primary-note" style="font-size:11.5px;color:#b45309;margin:-4px 0 8px"></div>
       <div class="tbl-wrap" id="tbl-primary"></div>
     </div>
 
@@ -322,6 +323,13 @@ function fmtDoOrLoai(r){
   return DO_LOAI_LBL[r.loai] || r.loai || '';
 }
 
+function normTen(s){ return (s||'').trim().replace(/\s+/g,' ').toLowerCase(); }
+function getMuaChotMocFor(muaChotMap, ten){
+  var norm = normTen(ten);
+  for (var k in muaChotMap) { if (normTen(k) === norm) return parseFloat(muaChotMap[k]) || 0; }
+  return 0;
+}
+
 function fetchAllData(cb, errCb){
   sbClient.from('mucaosu_data').select('data_key,data_value').eq('user_id', sbUser.id).then(function(res){
     if (res.error) { errCb && errCb(res.error.message); return; }
@@ -333,7 +341,8 @@ function fetchAllData(cb, errCb){
       sg: map['sg3'] || [],
       su: map['su_data'] || [],
       khIds: map['kh_ids'] || {},
-      adminPw: map['admin_pw']
+      adminPw: map['admin_pw'],
+      muaChotMap: map['mua_chot_moc'] || {}
     });
   }).catch(function(e){ errCb && errCb(e.message); });
 }
@@ -452,13 +461,18 @@ function renderCustomerData(ten, id, data, isAdminCall){
     document.getElementById('data-id').textContent = 'Mã KH: ' + id;
   }
 
-  var mua = (data.mua||[]).filter(function(r){ return r.ten === ten; }).sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+  var muaChotMoc = getMuaChotMocFor(data.muaChotMap||{}, ten);
+  var muaAll = (data.mua||[]).filter(function(r){ return r.ten === ten; });
+  // Nếu chủ vựa đã "Chốt danh sách Thu Mua": chỉ hiện các giao dịch phát sinh SAU mốc chốt (id = thời điểm lưu)
+  var mua = (muaChotMoc > 0 ? muaAll.filter(function(r){ return (r.id||0) > muaChotMoc; }) : muaAll)
+    .sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+  var muaSoAn = muaChotMoc > 0 ? (muaAll.length - mua.length) : 0;
   var ban = (data.ban||[]).filter(function(r){ return r.ten === ten; }).sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
   var sg  = (data.sg||[]).filter(function(r){ return r.ten === ten; }).sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
   var su  = (data.su||[]).filter(function(r){ return r.ten === ten; }).sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
 
   // Tự động phát hiện vai trò: có Bán mà không có Thu Mua -> đây là NGƯỜI MUA (đầu mối mua lại hàng)
-  var isBuyer = (mua.length === 0 && ban.length > 0);
+  var isBuyer = (muaAll.length === 0 && ban.length > 0);
 
   var colsGD = [
     {label:'Ngày', fmt:function(r){ return fmtDateSmart(r.date); }},
@@ -486,6 +500,12 @@ function renderCustomerData(ten, id, data, isAdminCall){
   var primaryLabel = isBuyer ? '🚛 Lịch sử mua hàng từ vựa' : '📥 Lịch sử Thu Mua';
   var primaryTotal = primaryRows.reduce(function(s,x){ return s + (x.tt||0); }, 0);
   document.getElementById('primary-title').innerHTML = primaryLabel + ' (<span id="cnt-primary">' + primaryRows.length + '</span>)';
+  var primaryNoteEl = document.getElementById('primary-note');
+  if (!isBuyer && muaSoAn > 0) {
+    if (primaryNoteEl) primaryNoteEl.innerHTML = '🔒 ' + muaSoAn + ' giao dịch trước ngày chốt đã được ẩn — liên hệ chủ vựa nếu cần xem lại.';
+  } else if (primaryNoteEl) {
+    primaryNoteEl.innerHTML = '';
+  }
   document.getElementById('tbl-primary').innerHTML = rowsToTable(primaryRows, colsGD, 'Tổng cộng', 'tt');
   document.getElementById('card-primary').style.display = '';
 

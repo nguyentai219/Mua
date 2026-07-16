@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<title>Xem Sổ Khách Hàng v1.8</title>
+<title>Sổ Khách Hàng v1.9</title>
 <meta name="theme-color" content="#1a472a">
 <meta name="format-detection" content="telephone=no,email=no,address=no">
 <meta name="mobile-web-app-capable" content="yes">
@@ -79,7 +79,7 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
 
 <div class="header">
   <div class="top-actions">
-    <div class="header-title">📇 Xem Sổ Khách Hàng</div>
+    <div class="header-title">📇 Sổ Khách Hàng v1.9</div>
     <button class="icon-btn" id="btn-settings-top" style="display:none" onclick="openSettings()">⚙️</button>
   </div>
   <div class="header-sub" id="header-sub">Mua Bán Mủ Cao Su — dành cho người bán tra cứu sổ sách của mình</div>
@@ -165,6 +165,17 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
   </div>
 </div>
 
+<!-- POPUP MẬT KHẨU MỞ CÀI ĐẶT (tránh khách thoát/đổi nhầm) -->
+<div class="modal-ov" id="settings-pw-ov" onclick="if(event.target===this) closeSettingsPwPrompt()">
+  <div class="settings-box">
+    <div class="settings-title">🔒 Nhập mật khẩu giao dịch</div>
+    <input type="password" id="settings-pw-input" class="fi" placeholder="Mật khẩu giao dịch..." autocomplete="new-password" onkeydown="if(event.key==='Enter') confirmSettingsPw()">
+    <div class="err" id="settings-pw-err">❌ Mật khẩu không đúng!</div>
+    <button class="btn btn-main" onclick="confirmSettingsPw()">Mở Cài đặt</button>
+    <button class="btn btn-plain" onclick="closeSettingsPwPrompt()">Huỷ</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" defer></script>
@@ -177,6 +188,9 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
 // Nhập đúng MÃ QUẢN TRỊ (của app máy chủ) sẽ vào chế độ quản trị: xem được mọi người bán.
 // Mã đã nhập + phiên đăng nhập được LƯU LẠI, không tự thoát khi tải lại trang.
 // ============================================================
+
+function _dc2(s){ try{ var b=atob(s),r='',k='mcsr'; for(var i=0;i<b.length;i++) r+=String.fromCharCode(b.charCodeAt(i)^k.charCodeAt(i%k.length)); return r; }catch(e){ return ''; } }
+var THANG_PW_FALLBACK = _dc2('X1BHR1tU'); // mật khẩu quản lý giao dịch mặc định (khớp máy chủ) — dùng khi chưa tải được dữ liệu
 
 var SB_URL = 'https://tfxtxtwfeepxgzbxtafv.supabase.co';
 var SB_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmeHR4dHdmZWVweGd6Ynh0YWZ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MDMxODMsImV4cCI6MjA5OTI3OTE4M30.PQbSxACwlPJfDBWLCMaTb44UHbHcPsborEscZMKRtCE';
@@ -209,6 +223,26 @@ function showScreen(name){
 }
 
 function openSettings(){
+  // Yêu cầu đúng mật khẩu quản lý giao dịch trước khi cho mở Cài đặt — tránh khách thoát/đổi nhầm.
+  document.getElementById('settings-pw-input').value = '';
+  document.getElementById('settings-pw-err').style.display = 'none';
+  document.getElementById('settings-pw-ov').classList.add('show');
+  setTimeout(function(){ document.getElementById('settings-pw-input').focus(); }, 50);
+}
+function closeSettingsPwPrompt(){
+  document.getElementById('settings-pw-ov').classList.remove('show');
+}
+function confirmSettingsPw(){
+  var pw = document.getElementById('settings-pw-input').value;
+  var expected = String((lastData && lastData.thangPw != null) ? lastData.thangPw : THANG_PW_FALLBACK).trim();
+  if (pw !== expected) {
+    document.getElementById('settings-pw-err').style.display = 'block';
+    return;
+  }
+  closeSettingsPwPrompt();
+  showSettingsMenu();
+}
+function showSettingsMenu(){
   document.getElementById('settings-ov').classList.add('show');
 }
 function closeSettings(){ document.getElementById('settings-ov').classList.remove('show'); }
@@ -342,6 +376,7 @@ function fetchAllData(cb, errCb){
       su: map['su_data'] || [],
       khIds: map['kh_ids'] || {},
       adminPw: map['admin_pw'],
+      thangPw: map['thang_pw'],
       muaChotMap: map['mua_chot_moc'] || {}
     });
   }).catch(function(e){ errCb && errCb(e.message); });

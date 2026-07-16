@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<title>Sổ Khách Hàng v1.9</title>
+<title>Sổ Khách Hàng v1.10</title>
 <meta name="theme-color" content="#1a472a">
 <meta name="format-detection" content="telephone=no,email=no,address=no">
 <meta name="mobile-web-app-capable" content="yes">
@@ -79,7 +79,7 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
 
 <div class="header">
   <div class="top-actions">
-    <div class="header-title">📇 Sổ Khách Hàng v1.9</div>
+    <div class="header-title">📇 Sổ Khách Hàng v1.10</div>
     <button class="icon-btn" id="btn-settings-top" style="display:none" onclick="openSettings()">⚙️</button>
   </div>
   <div class="header-sub" id="header-sub">Mua Bán Mủ Cao Su — dành cho người bán tra cứu sổ sách của mình</div>
@@ -148,6 +148,11 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
     <div class="card" id="card-su" style="display:none">
       <div class="sec-title">💵 Lịch sử Ứng tiền (<span id="cnt-su">0</span>)</div>
       <div class="tbl-wrap" id="tbl-su"></div>
+    </div>
+
+    <div class="card" id="card-cc" style="display:none">
+      <div class="sec-title">⏱️ Sổ Chấm Công</div>
+      <div id="cc-list"></div>
     </div>
 
   </div>
@@ -360,8 +365,14 @@ function fmtDoOrLoai(r){
 function normTen(s){ return (s||'').trim().replace(/\s+/g,' ').toLowerCase(); }
 function getMuaChotMocFor(muaChotMap, ten){
   var norm = normTen(ten);
-  for (var k in muaChotMap) { if (normTen(k) === norm) return parseFloat(muaChotMap[k]) || 0; }
-  return 0;
+  for (var k in muaChotMap) { if (normTen(k) === norm) return muaChotMap[k] || ''; }
+  return '';
+}
+// Mới nhất lên đầu: so theo ngày trước, nếu trùng ngày thì so theo thời điểm lưu (id) để thứ tự luôn ổn định
+function sortMoiNhat(a,b){
+  var d = (b.date||'').localeCompare(a.date||'');
+  if (d !== 0) return d;
+  return (b.id||0) - (a.id||0);
 }
 
 function fetchAllData(cb, errCb){
@@ -374,6 +385,7 @@ function fetchAllData(cb, errCb){
       ban: map['gd3_ban'] || [],
       sg: map['sg3'] || [],
       su: map['su_data'] || [],
+      cc: map['cc_data'] || [],
       khIds: map['kh_ids'] || {},
       adminPw: map['admin_pw'],
       thangPw: map['thang_pw'],
@@ -453,7 +465,7 @@ function onAdminSelectChange(){
 }
 function showDataCards(show){
   if (!show) {
-    ['sum-card','card-primary','card-sg','card-su'].forEach(function(id){
+    ['sum-card','card-primary','card-sg','card-su','card-cc'].forEach(function(id){
       document.getElementById(id).style.display = 'none';
     });
   }
@@ -496,15 +508,19 @@ function renderCustomerData(ten, id, data, isAdminCall){
     document.getElementById('data-id').textContent = 'Mã KH: ' + id;
   }
 
-  var muaChotMoc = getMuaChotMocFor(data.muaChotMap||{}, ten);
+  var muaChotDate = getMuaChotMocFor(data.muaChotMap||{}, ten); // chuỗi 'yyyy-mm-dd' đã chốt đến hết ngày này, hoặc '' nếu chưa chốt
   var muaAll = (data.mua||[]).filter(function(r){ return r.ten === ten; });
-  // Nếu chủ vựa đã "Chốt danh sách Thu Mua": chỉ hiện các giao dịch phát sinh SAU mốc chốt (id = thời điểm lưu)
-  var mua = (muaChotMoc > 0 ? muaAll.filter(function(r){ return (r.id||0) > muaChotMoc; }) : muaAll)
-    .sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
-  var muaSoAn = muaChotMoc > 0 ? (muaAll.length - mua.length) : 0;
-  var ban = (data.ban||[]).filter(function(r){ return r.ten === ten; }).sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
-  var sg  = (data.sg||[]).filter(function(r){ return r.ten === ten; }).sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
-  var su  = (data.su||[]).filter(function(r){ return r.ten === ten; }).sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+  // Nếu chủ vựa đã "Chốt danh sách Thu Mua" đến 1 ngày cụ thể: chỉ hiện các giao dịch có NGÀY SAU ngày chốt đó
+  var mua = (muaChotDate ? muaAll.filter(function(r){ return (r.date||'') > muaChotDate; }) : muaAll)
+    .sort(sortMoiNhat);
+  var muaSoAn = muaChotDate ? (muaAll.length - mua.length) : 0;
+  var ban = (data.ban||[]).filter(function(r){ return r.ten === ten; }).sort(sortMoiNhat);
+  var sg  = (data.sg||[]).filter(function(r){ return r.ten === ten; }).sort(sortMoiNhat);
+  var su  = (data.su||[]).filter(function(r){ return r.ten === ten; }).sort(sortMoiNhat);
+  var cc  = (data.cc||[]).filter(function(r){ return normTen(r.ten) === normTen(ten); }).sort(sortMoiNhat);
+
+  // Người chỉ có sổ Chấm Công (công nhân), không phải khách hàng mua/bán/gửi/ứng -> ẩn hẳn các thẻ không liên quan
+  var isCongNhanOnly = (muaAll.length===0 && ban.length===0 && sg.length===0 && su.length===0 && cc.length>0);
 
   // Tự động phát hiện vai trò: có Bán mà không có Thu Mua -> đây là NGƯỜI MUA (đầu mối mua lại hàng)
   var isBuyer = (muaAll.length === 0 && ban.length > 0);
@@ -537,12 +553,13 @@ function renderCustomerData(ten, id, data, isAdminCall){
   document.getElementById('primary-title').innerHTML = primaryLabel + ' (<span id="cnt-primary">' + primaryRows.length + '</span>)';
   var primaryNoteEl = document.getElementById('primary-note');
   if (!isBuyer && muaSoAn > 0) {
-    if (primaryNoteEl) primaryNoteEl.innerHTML = '🔒 ' + muaSoAn + ' giao dịch trước ngày chốt đã được ẩn — liên hệ chủ vựa nếu cần xem lại.';
+    var chotDD = muaChotDate ? muaChotDate.split('-').reverse().join('/') : '';
+    if (primaryNoteEl) primaryNoteEl.innerHTML = '🔒 ' + muaSoAn + ' giao dịch từ ngày ' + chotDD + ' trở về trước đã được ẩn (đã chốt) — liên hệ chủ vựa nếu cần xem lại.';
   } else if (primaryNoteEl) {
     primaryNoteEl.innerHTML = '';
   }
   document.getElementById('tbl-primary').innerHTML = rowsToTable(primaryRows, colsGD, 'Tổng cộng', 'tt');
-  document.getElementById('card-primary').style.display = '';
+  document.getElementById('card-primary').style.display = isCongNhanOnly ? 'none' : '';
 
   // ── TỔNG QUAN: chỉ hiện các mục có dữ liệu, chú thích theo đúng vai trò ──
   var tongSgMo = sg.filter(function(r){ return !r.chot; }).reduce(function(s,x){ return s + (x.tt||0); }, 0);
@@ -552,7 +569,7 @@ function renderCustomerData(ten, id, data, isAdminCall){
   if (su.length > 0) sumHtml += '<div class="sum-box"><div class="sum-lbl">💵 Đã ứng (chưa chốt)</div><div class="sum-val" style="color:var(--red)">' + fmtVND(tongSuMo) + 'đ</div></div>';
   sumHtml += '<div class="sum-box"><div class="sum-lbl">🕐 Cập nhật lúc</div><div class="sum-val" style="font-size:12px;color:var(--g600)">' + new Date().toLocaleString('vi-VN') + '</div></div>';
   document.getElementById('sum-grid').innerHTML = sumHtml;
-  document.getElementById('sum-card').style.display = '';
+  document.getElementById('sum-card').style.display = isCongNhanOnly ? 'none' : '';
 
   // ── Gửi sổ / Ứng tiền: chỉ hiện khi thực sự có dữ liệu (tối ưu, đỡ rối cho người mua lại hàng) ──
   document.getElementById('card-sg').style.display = sg.length > 0 ? '' : 'none';
@@ -565,6 +582,51 @@ function renderCustomerData(ten, id, data, isAdminCall){
     document.getElementById('cnt-su').textContent = su.length;
     document.getElementById('tbl-su').innerHTML = rowsToTable(su, colsSU, 'Tổng cộng', 'tien');
   }
+
+  // ── Chấm Công (chỉ hiện nếu người này có trong sổ Chấm Công) ──
+  document.getElementById('card-cc').style.display = cc.length > 0 ? '' : 'none';
+  if (cc.length > 0) {
+    document.getElementById('cc-list').innerHTML = cc.map(renderCcCard).join('');
+  }
+}
+
+// ── Port thuật toán tính công từ app chính (Mua Bán Mủ Cao Su), chỉ để XEM — không chỉnh sửa ──
+function ccISO(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function ccEffectiveEnd(r){ return (r.chotCong && r.chotDate) ? r.chotDate : ccISO(new Date()); }
+function ccCalcTotals(r){
+  var start=new Date(r.date+'T00:00:00'), end=new Date(ccEffectiveEnd(r)+'T00:00:00');
+  var soNgayLam=0, soNgayNghi=0, soTienUng=0, soTienThuong=0;
+  for (var d=new Date(start); d<=end; d.setDate(d.getDate()+1)) {
+    var ds=ccISO(d);
+    var g=(r.ghiChep||{})[ds];
+    var loai=g?g.loai:'lam';
+    if (loai==='lam') soNgayLam++;
+    else if (loai==='nghi') soNgayNghi++;
+    else if (loai==='ung') soTienUng += (g.soTien||0);
+    else if (loai==='thuong') soTienThuong += (g.soTien||0);
+  }
+  var luongThang=parseFloat(r.luongThang)||0;
+  var luongNgay=Math.round(luongThang/30);
+  var tienTruNghi=soNgayNghi*luongNgay;
+  var thucLinh=luongThang - tienTruNghi - soTienUng + soTienThuong;
+  return {luongThang:luongThang, luongNgay:luongNgay, soNgayLam:soNgayLam, soNgayNghi:soNgayNghi,
+    tienTruNghi:tienTruNghi, soTienUng:soTienUng, soTienThuong:soTienThuong, thucLinh:thucLinh};
+}
+function renderCcCard(r){
+  var t = ccCalcTotals(r);
+  var chotTag = r.chotCong
+    ? '<span class="badge badge-closed">🔒 Đã chốt '+fmtDateSmart(r.chotDate)+'</span>'
+    : '<span class="badge badge-open">🟢 Đang mở</span>';
+  return '<div style="background:var(--g50,#f7f7f5);border-radius:10px;padding:10px 12px;margin-bottom:8px">'
+    + '<div style="font-weight:700;font-size:13px;margin-bottom:4px">📅 Từ '+fmtDateSmart(r.date)+' đến '+fmtDateSmart(ccEffectiveEnd(r))+' '+chotTag+'</div>'
+    + '<div style="font-size:12.5px;color:var(--g600,#666);line-height:1.7">'
+    + '✔ Ngày làm: <b style="color:#16a34a">'+t.soNgayLam+'</b> ngày &nbsp;·&nbsp; ✗ Ngày nghỉ: <b style="color:#dc2626">'+t.soNgayNghi+'</b> ngày<br>'
+    + 'Tiền công tháng: <b>'+fmtVND(t.luongThang)+'đ</b> &nbsp;·&nbsp; Trừ nghỉ: <b style="color:#dc2626">-'+fmtVND(t.tienTruNghi)+'đ</b><br>'
+    + (t.soTienUng>0 ? 'Đã ứng: <b style="color:#dc2626">-'+fmtVND(t.soTienUng)+'đ</b><br>' : '')
+    + (t.soTienThuong>0 ? 'Thưởng: <b style="color:#16a34a">+'+fmtVND(t.soTienThuong)+'đ</b><br>' : '')
+    + '</div>'
+    + '<div style="margin-top:6px;padding-top:6px;border-top:1px solid #e5e5e0;font-size:14px;display:flex;justify-content:space-between"><span>Thực lãnh</span><b style="color:var(--gd,#1a472a)">'+fmtVND(t.thucLinh)+'đ</b></div>'
+    + '</div>';
 }
 
 // Khởi động tự động làm mới ngầm theo cấu hình đã lưu (mặc định: bật, mỗi 10 giây)

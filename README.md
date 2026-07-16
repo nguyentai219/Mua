@@ -1,4 +1,4 @@
-# Sổ Khách Hàng (v1.9)
+# Sổ Khách Hàng (v1.10)
 
 Ứng dụng đồng hành ("máy khách") của app **Mua Bán Mủ Cao Su**. Cài trên điện thoại của khách hàng bán mủ, cho phép họ tự tra cứu sổ **Thu Mua / Gửi sổ / Ứng tiền** của riêng mình — không xem được dữ liệu của khách hàng khác, và không xem được **Bán** (giao dịch bán cho vựa lớn, không liên quan tới khách hàng cá nhân).
 
@@ -29,6 +29,7 @@ nguyentai219.github.io/XemSoKhachHang/
 
 | Phiên bản | Ngày | Thay đổi |
 |---|---|---|
+| **v1.10** | 2026-07 | (1) Sắp xếp Lịch sử Thu Mua (và Bán/Gửi sổ/Ứng tiền) luôn theo **mới nhất lên đầu**, kể cả nhiều giao dịch cùng ngày. (2) Cơ chế "Chốt Thu Mua" bên app chính đổi sang chốt theo **ngày tuỳ chọn** (không còn chốt theo "thời điểm bấm nút") — chỉ ẩn các giao dịch có ngày từ mốc đã chọn trở về trước. (3) Thêm thẻ **⏱️ Sổ Chấm Công**: công nhân dùng Mã KH riêng (đồng bộ từ Chấm Công bên app chính) để tự xem kỳ chấm công, số ngày làm/nghỉ, tiền ứng/thưởng, thực lãnh của mình |
 | **v1.9** | 2026-07 | Đổi tên app từ "Xem Sổ Khách Hàng" thành **"Sổ Khách Hàng"** (có ghi số phiên bản ngay sau tên). Đổi bộ icon riêng biệt với app chính (dùng ảnh túi tiền bắt tay) để dễ phân biệt 2 app trên điện thoại. Thêm cổng mật khẩu: bấm vào ⚙️ Cài đặt nay bắt buộc nhập đúng **mật khẩu quản lý giao dịch** (đồng bộ từ app chính) mới mở được menu Cài đặt — tránh trường hợp khách bấm nhầm rồi thoát/tra cứu mã khác/đăng xuất ngoài ý muốn |
 | **v1.8** | 2026-07 | Cập nhật theo app chính: mốc chốt Thu Mua nay lưu riêng theo từng khách hàng (`mua_chot_moc` là object thay vì 1 mốc chung) — mỗi khách hàng chỉ ẩn Thu Mua cũ nếu chính người đó đã được chốt riêng |
 | **v1.7** | 2026-07 | Hỗ trợ cơ chế "Chốt danh sách Thu Mua" mới bên app chính: nếu chủ vựa đã chốt, màn Lịch sử Thu Mua chỉ hiện các giao dịch phát sinh SAU thời điểm chốt, kèm ghi chú số lượng giao dịch cũ đã ẩn. Thay logo/icon và ảnh khởi động (splash) theo bộ nhận diện thương hiệu mới |

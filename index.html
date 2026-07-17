@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<title>Sổ Khách Hàng v1.10</title>
+<title>Sổ Khách Hàng v1.11</title>
 <meta name="theme-color" content="#1a472a">
 <meta name="format-detection" content="telephone=no,email=no,address=no">
 <meta name="mobile-web-app-capable" content="yes">
@@ -79,7 +79,7 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
 
 <div class="header">
   <div class="top-actions">
-    <div class="header-title">📇 Sổ Khách Hàng v1.10</div>
+    <div class="header-title">📇 Sổ Khách Hàng v1.11</div>
     <button class="icon-btn" id="btn-settings-top" style="display:none" onclick="openSettings()">⚙️</button>
   </div>
   <div class="header-sub" id="header-sub">Mua Bán Mủ Cao Su — dành cho người bán tra cứu sổ sách của mình</div>
@@ -632,11 +632,37 @@ function renderCcCard(r){
 // Khởi động tự động làm mới ngầm theo cấu hình đã lưu (mặc định: bật, mỗi 10 giây)
 setupAutoRefresh();
 
-// Đăng ký Service Worker (offline shell)
+// Đăng ký Service Worker (offline shell) + chủ động kiểm tra bản mới, tránh app đứng yên ở bản cũ
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function(){
-    navigator.serviceWorker.register('sw.js').catch(function(){});
+    navigator.serviceWorker.register('sw.js').then(function(reg){
+      document.addEventListener('visibilitychange', function(){
+        if (document.visibilityState === 'visible') reg.update().catch(function(){});
+      });
+      reg.update().catch(function(){});
+      reg.addEventListener('updatefound', function(){
+        var nw = reg.installing;
+        if (!nw) return;
+        nw.addEventListener('statechange', function(){
+          if (nw.state === 'activated' && navigator.serviceWorker.controller) showUpdateBanner();
+        });
+      });
+    }).catch(function(){});
+    var _updShown = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function(){
+      if (_updShown) return; _updShown = true;
+      showUpdateBanner();
+    });
   });
+}
+function showUpdateBanner(){
+  if (document.getElementById('update-banner')) return;
+  var b = document.createElement('div');
+  b.id = 'update-banner';
+  b.textContent = '🔄 Đã có bản cập nhật mới — Nhấn để tải lại';
+  b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#1a472a;color:#fff;text-align:center;padding:11px 10px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;box-shadow:0 2px 8px rgba(0,0,0,.25)';
+  b.onclick = function(){ location.reload(); };
+  document.body.appendChild(b);
 }
 </script>
 </body>

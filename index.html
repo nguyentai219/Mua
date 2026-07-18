@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<title>Sổ Khách Hàng v1.16</title>
+<title>Sổ Khách Hàng v1.17</title>
 <meta name="theme-color" content="#1a472a">
 <meta name="format-detection" content="telephone=no,email=no,address=no">
 <meta name="mobile-web-app-capable" content="yes">
@@ -30,7 +30,7 @@ body{font-family:'Be Vietnam Pro',sans-serif;background:var(--g50);color:var(--g
 .header-title{font-size:15px;font-weight:800;display:flex;align-items:center;gap:6px}
 .header-ver{font-size:11px;font-weight:600;color:rgba(255,255,255,.7);letter-spacing:.3px}
 .header-sub{font-size:11px;color:rgba(255,255,255,.75);margin-top:3px}
-.page{padding:16px}
+.page{padding:16px;border:2px solid var(--gd);border-top:none;border-radius:0 0 16px 16px;margin-top:-1px}
 .card{background:#fff;border-radius:var(--r);box-shadow:var(--s1);padding:18px;margin-bottom:14px}
 .fl{font-size:12px;font-weight:700;color:var(--g600);margin-bottom:6px;display:block}
 .fi{width:100%;padding:12px 14px;border:1.5px solid var(--g200);border-radius:var(--r);font-family:'Be Vietnam Pro',sans-serif;font-size:15px;margin-bottom:14px;background:#fff}
@@ -64,6 +64,7 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
 .sum-box{background:var(--g50);border-radius:10px;padding:10px 12px}
 .sum-lbl{font-size:11px;color:var(--g600);font-weight:600}
 .sum-val{font-size:15px;font-weight:800;margin-top:2px}
+.sum-sub{font-size:10px;color:var(--g600);margin-top:2px;font-weight:600}
 
 /* ── Khối màu riêng cho từng loại sổ, tiêu đề tô nền màu bao trọn khung dữ liệu ── */
 .sec-card{border-radius:14px;margin-bottom:14px;overflow:hidden;border:2px solid var(--sc-bd);box-shadow:var(--s1)}
@@ -102,7 +103,7 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
     <div class="header-brand">
       <img src="icon-192.png" alt="Logo" class="header-icon">
       <div class="header-text">
-        <div class="header-title">Sổ Khách Hàng <span class="header-ver" id="app-ver">v1.16</span></div>
+        <div class="header-title">Sổ Khách Hàng <span class="header-ver" id="app-ver">v1.17</span></div>
         <div class="header-sub" id="header-sub">Mua Bán Mủ Cao Su — dành cho người bán tra cứu sổ sách của mình</div>
       </div>
     </div>
@@ -163,13 +164,7 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
       <div class="empty">👆 Chọn 1 người bán ở trên để xem sổ chi tiết</div>
     </div>
 
-    <!-- Tổng quan: gộp số liệu từ mọi loại sổ, hiện ngay dưới tên khách -->
-    <div class="sec-card sc-green" id="sum-card" style="display:none">
-      <div class="sec-card-title">📊 Tổng quan</div>
-      <div class="sec-card-body"><div class="sum-grid" id="sum-grid" style="margin-top:0"></div></div>
-    </div>
-
-    <!-- Lịch sử chính: Thu Mua (người bán) hoặc Bán (người mua lại hàng) — luôn ngay dưới Tổng quan -->
+    <!-- Lịch sử chính: Thu Mua (người bán) hoặc Bán (người mua lại hàng) — luôn ngay dưới tên -->
     <div class="sec-card sc-blue" id="card-primary" style="display:none">
       <div class="sec-card-title" id="primary-title">📥 Lịch sử Thu Mua <span class="cnt-badge">(<span id="cnt-primary">0</span>)</span></div>
       <div class="sec-card-body">
@@ -191,6 +186,12 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
     <div class="sec-card sc-purple" id="card-cc" style="display:none">
       <div class="sec-card-title">⏱️ Sổ Chấm Công</div>
       <div class="sec-card-body"><div id="cc-list"></div></div>
+    </div>
+
+    <!-- Tổng quan: gộp số liệu chi tiết từ mọi loại sổ, đặt ở cuối cùng -->
+    <div class="sec-card sc-green" id="sum-card" style="display:none">
+      <div class="sec-card-title">📊 Tổng quan</div>
+      <div class="sec-card-body"><div class="sum-grid" id="sum-grid" style="margin-top:0"></div></div>
     </div>
 
   </div>
@@ -278,9 +279,12 @@ function toast(msg){
   clearTimeout(window._toastTimer);
   window._toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 2600);
 }
+var _lastDataUpdateAt = null;
 function getConnStatusText(){
   if (!navigator.onLine) return '❌ Lỗi kết nối';
-  return sbUser ? '✅ Đã kết nối - tự động đồng bộ khi có dữ liệu mới' : '⚠️ Chưa kết nối';
+  if (!sbUser) return '⚠️ Chưa kết nối';
+  var timeStr = _lastDataUpdateAt ? _lastDataUpdateAt.toLocaleTimeString('vi-VN') : '';
+  return '✅ Đã kết nối' + (timeStr ? (' - cập nhật lúc: ' + timeStr) : '');
 }
 function refreshConnStatus(){
   var el = document.getElementById('header-sub');
@@ -644,6 +648,8 @@ function rowsToTable(rows, cols, footLabel, footKey){
 }
 
 function renderCustomerData(ten, id, data, isAdminCall){
+  _lastDataUpdateAt = new Date();
+  refreshConnStatus();
   if (!isAdminCall) {
     document.getElementById('data-ten').textContent = '👤 ' + ten;
     document.getElementById('data-id').textContent = id;
@@ -702,13 +708,26 @@ function renderCustomerData(ten, id, data, isAdminCall){
   document.getElementById('tbl-primary').innerHTML = rowsToTable(primaryRows, colsGD, 'Tổng cộng', 'tt');
   document.getElementById('card-primary').style.display = isCongNhanOnly ? 'none' : '';
 
-  // ── TỔNG QUAN: chỉ hiện các mục có dữ liệu, chú thích theo đúng vai trò ──
+  // ── TỔNG QUAN: chi tiết đầy đủ hơn — tổng + số lượt + tách đã chốt/chưa chốt ──
+  var tongSgAll = sg.reduce(function(s,x){ return s + (x.tt||0); }, 0);
+  var tongSgChot = sg.filter(function(r){ return r.chot; }).reduce(function(s,x){ return s + (x.tt||0); }, 0);
   var tongSgMo = sg.filter(function(r){ return !r.chot; }).reduce(function(s,x){ return s + (x.tt||0); }, 0);
+  var tongSuAll = su.reduce(function(s,x){ return s + (x.tien||0); }, 0);
+  var tongSuChot = su.filter(function(r){ return r.chot; }).reduce(function(s,x){ return s + (x.tien||0); }, 0);
   var tongSuMo = su.filter(function(r){ return !r.chot; }).reduce(function(s,x){ return s + (x.tien||0); }, 0);
-  var sumHtml = '<div class="sum-box"><div class="sum-lbl">' + (isBuyer ? '🚛 Tổng đã mua' : '📥 Tổng Thu Mua') + '</div><div class="sum-val" style="color:var(--gd)">' + fmtVND(primaryTotal) + 'đ</div></div>';
-  if (sg.length > 0) sumHtml += '<div class="sum-box"><div class="sum-lbl">📒 Gửi sổ (chưa chốt)</div><div class="sum-val" style="color:var(--gold)">' + fmtVND(tongSgMo) + 'đ</div></div>';
-  if (su.length > 0) sumHtml += '<div class="sum-box"><div class="sum-lbl">💵 Đã ứng (chưa chốt)</div><div class="sum-val" style="color:var(--red)">' + fmtVND(tongSuMo) + 'đ</div></div>';
-  sumHtml += '<div class="sum-box"><div class="sum-lbl">🕐 Cập nhật lúc</div><div class="sum-val" style="font-size:12px;color:var(--g600)">' + new Date().toLocaleString('vi-VN') + '</div></div>';
+  var sumHtml = '<div class="sum-box"><div class="sum-lbl">' + (isBuyer ? '🚛 Tổng đã mua' : '📥 Tổng Thu Mua') + '</div><div class="sum-val" style="color:var(--gd)">' + fmtVND(primaryTotal) + 'đ</div>'
+    + '<div class="sum-sub">' + primaryRows.length + ' lượt giao dịch' + (muaSoAn > 0 ? ', ' + muaSoAn + ' lượt đã ẩn (đã chốt)' : '') + '</div></div>';
+  if (sg.length > 0) {
+    sumHtml += '<div class="sum-box"><div class="sum-lbl">📒 Gửi sổ — Tổng cộng</div><div class="sum-val" style="color:var(--gold)">' + fmtVND(tongSgAll) + 'đ</div><div class="sum-sub">' + sg.length + ' lượt giao dịch</div></div>';
+    sumHtml += '<div class="sum-box"><div class="sum-lbl">📒 Gửi sổ — Chưa chốt</div><div class="sum-val" style="color:var(--gold)">' + fmtVND(tongSgMo) + 'đ</div></div>';
+    if (tongSgChot > 0) sumHtml += '<div class="sum-box"><div class="sum-lbl">📒 Gửi sổ — Đã chốt</div><div class="sum-val" style="color:var(--g600)">' + fmtVND(tongSgChot) + 'đ</div></div>';
+  }
+  if (su.length > 0) {
+    sumHtml += '<div class="sum-box"><div class="sum-lbl">💵 Ứng tiền — Tổng cộng</div><div class="sum-val" style="color:var(--red)">' + fmtVND(tongSuAll) + 'đ</div><div class="sum-sub">' + su.length + ' lượt giao dịch</div></div>';
+    sumHtml += '<div class="sum-box"><div class="sum-lbl">💵 Ứng tiền — Chưa chốt</div><div class="sum-val" style="color:var(--red)">' + fmtVND(tongSuMo) + 'đ</div></div>';
+    if (tongSuChot > 0) sumHtml += '<div class="sum-box"><div class="sum-lbl">💵 Ứng tiền — Đã chốt</div><div class="sum-val" style="color:var(--g600)">' + fmtVND(tongSuChot) + 'đ</div></div>';
+  }
+  if (cc.length > 0) sumHtml += '<div class="sum-box"><div class="sum-lbl">⏱️ Sổ Chấm Công</div><div class="sum-val" style="color:var(--g600)">' + cc.length + ' kỳ chấm công</div></div>';
   document.getElementById('sum-grid').innerHTML = sumHtml;
   document.getElementById('sum-card').style.display = isCongNhanOnly ? 'none' : '';
 

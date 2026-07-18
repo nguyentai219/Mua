@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<title>Sổ Khách Hàng v1.11</title>
+<title>Sổ Khách Hàng v1.13</title>
 <meta name="theme-color" content="#1a472a">
 <meta name="format-detection" content="telephone=no,email=no,address=no">
 <meta name="mobile-web-app-capable" content="yes">
@@ -79,7 +79,7 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
 
 <div class="header">
   <div class="top-actions">
-    <div class="header-title">📇 Sổ Khách Hàng v1.11</div>
+    <div class="header-title">📇 Sổ Khách Hàng v1.13</div>
     <button class="icon-btn" id="btn-settings-top" style="display:none" onclick="openSettings()">⚙️</button>
   </div>
   <div class="header-sub" id="header-sub">Mua Bán Mủ Cao Su — dành cho người bán tra cứu sổ sách của mình</div>
@@ -104,8 +104,11 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
   <div class="screen" id="scr-lookup">
     <div class="card">
       <div class="hint">Chào người bán! Nhập <b>Mã khách hàng</b> mà chủ vựa đã cung cấp cho bạn để xem sổ Thu Mua, Gửi sổ và Ứng tiền của mình.</div>
-      <label class="fl">Mã khách hàng</label>
-      <input type="text" id="lookup-id" class="fi fi-id" placeholder="ABCDE" maxlength="10" autocomplete="off" onkeydown="if(event.key==='Enter')traCuu()">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <label class="fl" style="margin-bottom:0">Mã khách hàng</label>
+        <button type="button" id="btn-code-history" onclick="openCodeHistory()" style="display:none;background:none;border:none;color:var(--gd);font-family:'Be Vietnam Pro',sans-serif;font-size:12px;font-weight:700;cursor:pointer;padding:2px 0">🕘 Các mã đã nhập</button>
+      </div>
+      <input type="text" inputmode="numeric" pattern="[0-9]*" id="lookup-id" class="fi fi-id" placeholder="12345" maxlength="5" autocomplete="off" onkeydown="if(event.key==='Enter')traCuu()">
       <div class="err" id="lookup-err"></div>
       <button class="btn btn-main" id="btn-lookup" onclick="traCuu()">🔍 Xem sổ của tôi</button>
     </div>
@@ -166,6 +169,16 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
 
     <button class="btn btn-out" id="btn-switch-code" onclick="onSwitchCode()">🔍 Tra cứu mã khác</button>
     <button class="btn btn-out" onclick="doLogout()">🚪 Đăng xuất tài khoản đồng bộ</button>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 2px;margin-top:6px;border-top:1px solid var(--g100)">
+      <div style="font-size:13px;color:var(--g600);font-weight:700;padding-right:10px">🔒 Hỏi mật khẩu khi mở Cài đặt</div>
+      <label style="position:relative;display:inline-block;width:42px;height:24px;flex:0 0 auto">
+        <input type="checkbox" id="settings-pw-toggle" onchange="toggleSettingsPwEnabled()" style="opacity:0;width:0;height:0">
+        <span id="settings-pw-toggle-track" style="position:absolute;cursor:pointer;inset:0;background:var(--g200);border-radius:24px;transition:.2s"></span>
+        <span id="settings-pw-toggle-dot" style="position:absolute;height:18px;width:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3)"></span>
+      </label>
+    </div>
+
     <button class="btn btn-plain" onclick="closeSettings()">Đóng</button>
   </div>
 </div>
@@ -178,6 +191,15 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
     <div class="err" id="settings-pw-err">❌ Mật khẩu không đúng!</div>
     <button class="btn btn-main" onclick="confirmSettingsPw()">Mở Cài đặt</button>
     <button class="btn btn-plain" onclick="closeSettingsPwPrompt()">Huỷ</button>
+  </div>
+</div>
+
+<!-- DANH SÁCH CÁC MÃ ĐÃ NHẬP TRÊN MÁY NÀY -->
+<div class="modal-ov" id="code-history-ov" onclick="if(event.target===this) closeCodeHistory()">
+  <div class="settings-box">
+    <div class="settings-title">🕘 Các mã đã nhập</div>
+    <div id="code-history-list" style="max-height:50vh;overflow-y:auto;margin-bottom:10px"></div>
+    <button class="btn btn-plain" onclick="closeCodeHistory()">Đóng</button>
   </div>
 </div>
 
@@ -225,9 +247,31 @@ function showScreen(name){
   document.getElementById('header-sub').textContent = (name==='login')
     ? 'Mua Bán Mủ Cao Su — dành cho người bán tra cứu sổ sách của mình'
     : (sbUser && sbUser.email ? ('Đã kết nối: ' + sbUser.email) : '');
+  if (name === 'lookup') updateCodeHistoryBtnVisibility();
 }
 
+var SETTINGS_PW_ENABLED_KEY = 'xskh_settings_pw_enabled';
+function isSettingsPwEnabled(){
+  var v = localStorage.getItem(SETTINGS_PW_ENABLED_KEY);
+  return v === null ? true : v === '1'; // mặc định BẬT, giữ đúng hành vi trước đây nếu chưa từng đổi
+}
+function setSettingsPwEnabled(v){ localStorage.setItem(SETTINGS_PW_ENABLED_KEY, v ? '1' : '0'); }
+function renderSettingsPwToggle(){
+  var on = isSettingsPwEnabled();
+  var cb = document.getElementById('settings-pw-toggle');
+  var track = document.getElementById('settings-pw-toggle-track');
+  var dot = document.getElementById('settings-pw-toggle-dot');
+  if (cb) cb.checked = on;
+  if (track) track.style.background = on ? 'var(--gd)' : 'var(--g200)';
+  if (dot) dot.style.left = on ? '21px' : '3px';
+}
+function toggleSettingsPwEnabled(){
+  setSettingsPwEnabled(!isSettingsPwEnabled());
+  renderSettingsPwToggle();
+}
 function openSettings(){
+  // Nếu người dùng đã tắt yêu cầu mật khẩu (trong chính menu Cài đặt) thì vào thẳng, không hỏi nữa.
+  if (!isSettingsPwEnabled()) { showSettingsMenu(); return; }
   // Yêu cầu đúng mật khẩu quản lý giao dịch trước khi cho mở Cài đặt — tránh khách thoát/đổi nhầm.
   document.getElementById('settings-pw-input').value = '';
   document.getElementById('settings-pw-err').style.display = 'none';
@@ -248,9 +292,48 @@ function confirmSettingsPw(){
   showSettingsMenu();
 }
 function showSettingsMenu(){
+  renderSettingsPwToggle();
   document.getElementById('settings-ov').classList.add('show');
 }
 function closeSettings(){ document.getElementById('settings-ov').classList.remove('show'); }
+
+// ── CÁC MÃ ĐÃ NHẬP TRÊN MÁY NÀY (chỉ lưu cục bộ trên thiết bị, không đồng bộ) ──
+var CODE_HISTORY_KEY = 'xskh_code_history';
+function getCodeHistory(){ try{ return JSON.parse(localStorage.getItem(CODE_HISTORY_KEY))||[]; }catch(e){ return []; } }
+function setCodeHistory(v){ localStorage.setItem(CODE_HISTORY_KEY, JSON.stringify(v)); }
+function addCodeHistory(id, ten){
+  if (!id || !ten) return;
+  var list = getCodeHistory().filter(function(e){ return e.id !== id; }); // bỏ bản ghi cũ của mã này nếu có, sẽ thêm lại lên đầu
+  list.unshift({ id: id, ten: ten });
+  if (list.length > 20) list = list.slice(0, 20);
+  setCodeHistory(list);
+  updateCodeHistoryBtnVisibility();
+}
+function updateCodeHistoryBtnVisibility(){
+  var btn = document.getElementById('btn-code-history');
+  if (btn) btn.style.display = getCodeHistory().length ? '' : 'none';
+}
+function openCodeHistory(){
+  var list = getCodeHistory();
+  var box = document.getElementById('code-history-list');
+  if (!list.length) {
+    box.innerHTML = '<div style="font-size:13px;color:var(--g500);text-align:center;padding:10px 0">Chưa có mã nào được nhập trên máy này.</div>';
+  } else {
+    box.innerHTML = list.map(function(e){
+      return '<div onclick="selectCodeFromHistory(&quot;'+e.id+'&quot;)" style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--g50,#f7f7f7);border-radius:10px;padding:10px 12px;margin-bottom:6px;cursor:pointer">'
+        + '<div style="font-weight:700;font-size:13px;color:var(--g800,#222);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">👤 '+e.ten+'</div>'
+        + '<div style="font-size:15px;font-weight:800;color:var(--gd);letter-spacing:1px;flex:0 0 auto">'+e.id+'</div>'
+        + '</div>';
+    }).join('');
+  }
+  document.getElementById('code-history-ov').classList.add('show');
+}
+function closeCodeHistory(){ document.getElementById('code-history-ov').classList.remove('show'); }
+function selectCodeFromHistory(id){
+  closeCodeHistory();
+  document.getElementById('lookup-id').value = id;
+  traCuu();
+}
 
 // ── TỰ ĐỘNG LÀM MỚI (làm mới ngầm, không tải lại cả trang nên không chớp màn hình) ──
 // Luôn mặc định BẬT, cố định mỗi 15 giây — không có tuỳ chọn tắt hay đổi thời gian.
@@ -422,6 +505,7 @@ function traCuu(codeOverride){
 
     isAdminMode = false;
     localStorage.setItem(CODE_KEY, idRaw);
+    addCodeHistory(idUpper, ten);
     document.getElementById('admin-header-card').style.display = 'none';
     document.getElementById('normal-header-card').style.display = '';
     document.getElementById('data-empty-hint').style.display = 'none';

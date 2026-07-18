@@ -1,11 +1,11 @@
-# Sổ Khách Hàng (v1.11)
+# Sổ Khách Hàng (v1.13)
 
 Ứng dụng đồng hành ("máy khách") của app **Mua Bán Mủ Cao Su**. Cài trên điện thoại của khách hàng bán mủ, cho phép họ tự tra cứu sổ **Thu Mua / Gửi sổ / Ứng tiền** của riêng mình — không xem được dữ liệu của khách hàng khác, và không xem được **Bán** (giao dịch bán cho vựa lớn, không liên quan tới khách hàng cá nhân).
 
 ## Cách hoạt động
 
 1. **Máy chủ** (chủ vựa) dùng app "Mua Bán Mủ Cao Su", đăng nhập Supabase, ghi chép Mua/Bán/Gửi/Ứng như bình thường — dữ liệu tự động đồng bộ lên Supabase.
-2. Trong app chính, vào **⚙️ Cài đặt → 📇 Mã khách hàng**, tìm tên khách hàng, bấm "Sao chép" để lấy **Mã KH** (5 ký tự, cố định, không đổi).
+2. Trong app chính, bấm icon **👥** (góc trên), tìm tên khách hàng, bấm "Sao chép" để lấy **Mã KH** (5 chữ số, cố định, không đổi).
 3. **Máy khách** (điện thoại khách hàng) cài app này, đăng nhập **CÙNG tài khoản Supabase** với máy chủ (chỉ cần làm 1 lần duy nhất trên máy đó — chủ vựa tự tay đăng nhập giúp khách hàng khi giao máy/cài đặt).
 4. Từ đó về sau, khách hàng chỉ cần mở app, nhập **Mã KH** của mình để xem sổ — không cần đăng nhập lại, không cần biết mật khẩu tài khoản Supabase.
 
@@ -29,6 +29,8 @@ nguyentai219.github.io/XemSoKhachHang/
 
 | Phiên bản | Ngày | Thay đổi |
 |---|---|---|
+| **v1.13** | 2026-07 | (1) Thêm nút "🕘 Các mã đã nhập" cạnh ô Mã khách hàng — hiện danh sách tên + mã đã từng tra cứu thành công trên chính máy này (lưu cục bộ, tối đa 20 mã gần nhất, không đồng bộ lên Supabase), bấm vào tên nào là tra cứu ngay mã đó, không cần gõ lại. Nút chỉ hiện khi đã có ít nhất 1 mã từng tra cứu. (2) Thêm công tắc bật/tắt trong ⚙️ Cài đặt: "🔒 Hỏi mật khẩu khi mở Cài đặt" — mặc định vẫn BẬT như trước, nếu tắt thì lần mở Cài đặt sau sẽ vào thẳng không cần nhập mật khẩu giao dịch nữa (dùng khi 1 người dùng riêng máy, không có ai khác bấm nhầm) |
+| **v1.12** | 2026-07 | Đồng bộ theo app chính: Mã khách hàng đổi từ kiểu chữ+số (VD: 7FDNP) sang **thuần số 5 chữ số** (VD: 04821) — dễ đọc, dễ nhập hơn cho người lớn tuổi. Ô nhập Mã khách hàng đổi sang bàn phím số, placeholder ví dụ đổi thành số |
 | **v1.11** | 2026-07 | Sửa lỗi app đứng yên ở bản cũ dù chủ vựa đã cập nhật app chính: thêm banner "🔄 Đã có bản cập nhật mới" tự hiện khi phát hiện bản mới, bấm vào để tải lại đúng bản mới nhất |
 | **v1.10** | 2026-07 | (1) Sắp xếp Lịch sử Thu Mua (và Bán/Gửi sổ/Ứng tiền) luôn theo **mới nhất lên đầu**, kể cả nhiều giao dịch cùng ngày. (2) Cơ chế "Chốt Thu Mua" bên app chính đổi sang chốt theo **ngày tuỳ chọn** (không còn chốt theo "thời điểm bấm nút") — chỉ ẩn các giao dịch có ngày từ mốc đã chọn trở về trước. (3) Thêm thẻ **⏱️ Sổ Chấm Công**: công nhân dùng Mã KH riêng (đồng bộ từ Chấm Công bên app chính) để tự xem kỳ chấm công, số ngày làm/nghỉ, tiền ứng/thưởng, thực lãnh của mình |
 | **v1.9** | 2026-07 | Đổi tên app từ "Xem Sổ Khách Hàng" thành **"Sổ Khách Hàng"** (có ghi số phiên bản ngay sau tên). Đổi bộ icon riêng biệt với app chính (dùng ảnh túi tiền bắt tay) để dễ phân biệt 2 app trên điện thoại. Thêm cổng mật khẩu: bấm vào ⚙️ Cài đặt nay bắt buộc nhập đúng **mật khẩu quản lý giao dịch** (đồng bộ từ app chính) mới mở được menu Cài đặt — tránh trường hợp khách bấm nhầm rồi thoát/tra cứu mã khác/đăng xuất ngoài ý muốn |

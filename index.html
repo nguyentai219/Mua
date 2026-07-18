@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<title>Sổ Khách Hàng v1.14</title>
+<title>Sổ Khách Hàng v1.16</title>
 <meta name="theme-color" content="#1a472a">
 <meta name="format-detection" content="telephone=no,email=no,address=no">
 <meta name="mobile-web-app-capable" content="yes">
@@ -48,8 +48,6 @@ select.fi{-webkit-appearance:none;cursor:pointer}
 .screen.active{display:block}
 .spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:6px}
 @keyframes sp{to{transform:rotate(360deg)}}
-.cust-name{font-size:18px;font-weight:800;color:var(--gd)}
-.cust-id{font-size:11.5px;color:var(--g600);margin-top:2px;letter-spacing:1px}
 .admin-tag{display:inline-block;background:#fef3c7;color:#92400e;font-size:11px;font-weight:800;padding:4px 10px;border-radius:8px}
 .sec-title{font-size:12.5px;font-weight:700;color:var(--gd);margin:18px 0 8px;display:flex;align-items:center;gap:6px}
 .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -66,9 +64,30 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
 .sum-box{background:var(--g50);border-radius:10px;padding:10px 12px}
 .sum-lbl{font-size:11px;color:var(--g600);font-weight:600}
 .sum-val{font-size:15px;font-weight:800;margin-top:2px}
+
+/* ── Khối màu riêng cho từng loại sổ, tiêu đề tô nền màu bao trọn khung dữ liệu ── */
+.sec-card{border-radius:14px;margin-bottom:14px;overflow:hidden;border:2px solid var(--sc-bd);box-shadow:var(--s1)}
+.sec-card-title{padding:11px 14px;font-size:13.5px;font-weight:800;display:flex;align-items:center;gap:6px;background:var(--sc-bg);color:var(--sc-tx)}
+.sec-card-title .cnt-badge{font-weight:700;opacity:.75;font-size:12px}
+.sec-card-body{background:#fff;padding:14px}
+.sec-card-note{font-size:11.5px;color:#b45309;margin:-4px 0 8px}
+.sc-green{--sc-bd:#86efac;--sc-bg:#dcfce7;--sc-tx:#166534}
+.sc-blue{--sc-bd:#93c5fd;--sc-bg:#dbeafe;--sc-tx:#1e40af}
+.sc-amber{--sc-bd:#fcd34d;--sc-bg:#fef3c7;--sc-tx:#92400e}
+.sc-red{--sc-bd:#fca5a5;--sc-bg:#fee2e2;--sc-tx:#991b1b}
+.sc-purple{--sc-bd:#c4b5fd;--sc-bg:#ede9fe;--sc-tx:#5b21b6}
+/* Khối tên khách hàng: tên bên trái, mã bên phải, nổi bật ngay đầu trang */
+.cust-card{display:flex;align-items:center;justify-content:space-between;gap:10px;border-radius:14px;border:2px solid var(--sc-bd);background:var(--sc-bg);padding:14px 16px;margin-bottom:14px}
+.cust-name{font-size:17px;font-weight:800;color:var(--sc-tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cust-id-wrap{text-align:right;flex:0 0 auto}
+.cust-id-lbl{font-size:9.5px;font-weight:700;color:var(--sc-tx);opacity:.7;letter-spacing:.3px}
+.cust-id{font-size:19px;font-weight:800;color:var(--sc-tx);letter-spacing:2px;margin-top:1px}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#2d3d36;color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90%;text-align:center}
 .toast.show{opacity:1}
 .top-actions{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
+.header-brand{display:flex;align-items:center;gap:8px;min-width:0}
+.header-icon{width:34px;height:34px;min-width:34px;border-radius:50%;object-fit:cover;display:block}
+.header-text{min-width:0}
 .icon-btn{background:rgba(255,255,255,.15);border:none;color:#fff;font-size:17px;width:34px;height:34px;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
 .modal-ov.show{display:flex}
@@ -80,10 +99,15 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
 
 <div class="header">
   <div class="top-actions">
-    <div class="header-title">📇 Sổ Khách Hàng <span class="header-ver" id="app-ver">v1.14</span></div>
+    <div class="header-brand">
+      <img src="icon-192.png" alt="Logo" class="header-icon">
+      <div class="header-text">
+        <div class="header-title">Sổ Khách Hàng <span class="header-ver" id="app-ver">v1.16</span></div>
+        <div class="header-sub" id="header-sub">Mua Bán Mủ Cao Su — dành cho người bán tra cứu sổ sách của mình</div>
+      </div>
+    </div>
     <button class="icon-btn" id="btn-settings-top" style="display:none" onclick="openSettings()">⚙️</button>
   </div>
-  <div class="header-sub" id="header-sub">Mua Bán Mủ Cao Su — dành cho người bán tra cứu sổ sách của mình</div>
 </div>
 
 <div class="page">
@@ -118,45 +142,55 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
   <!-- MÀN HIỂN THỊ DỮ LIỆU -->
   <div class="screen" id="scr-data">
 
-    <div class="card" id="normal-header-card">
+    <div class="cust-card sc-green" id="normal-header-card">
       <div class="cust-name" id="data-ten"></div>
-      <div class="cust-id" id="data-id"></div>
+      <div class="cust-id-wrap">
+        <div class="cust-id-lbl">Mã khách hàng</div>
+        <div class="cust-id" id="data-id"></div>
+      </div>
     </div>
 
-    <div class="card" id="admin-header-card" style="display:none">
-      <div class="admin-tag">🔑 Chế độ quản trị — xem được mọi người bán</div>
-      <label class="fl" style="margin-top:12px">Chọn người bán cần xem</label>
-      <select id="admin-select" class="fi" onchange="onAdminSelectChange()" style="margin-bottom:0"></select>
+    <div class="sec-card sc-amber" id="admin-header-card" style="display:none">
+      <div class="sec-card-title">🔑 Chế độ quản trị</div>
+      <div class="sec-card-body">
+        <div class="admin-tag" style="margin-bottom:10px">Xem được mọi người bán</div>
+        <label class="fl">Chọn người bán cần xem</label>
+        <select id="admin-select" class="fi" onchange="onAdminSelectChange()" style="margin-bottom:0"></select>
+      </div>
     </div>
 
     <div id="data-empty-hint" class="card" style="display:none">
       <div class="empty">👆 Chọn 1 người bán ở trên để xem sổ chi tiết</div>
     </div>
 
-    <!-- Lịch sử chính: Thu Mua (người bán) hoặc Bán (người mua lại hàng) — luôn ngay dưới tên -->
-    <div class="card" id="card-primary" style="display:none">
-      <div class="sec-title" id="primary-title">📥 Lịch sử Thu Mua (<span id="cnt-primary">0</span>)</div>
-      <div id="primary-note" style="font-size:11.5px;color:#b45309;margin:-4px 0 8px"></div>
-      <div class="tbl-wrap" id="tbl-primary"></div>
+    <!-- Tổng quan: gộp số liệu từ mọi loại sổ, hiện ngay dưới tên khách -->
+    <div class="sec-card sc-green" id="sum-card" style="display:none">
+      <div class="sec-card-title">📊 Tổng quan</div>
+      <div class="sec-card-body"><div class="sum-grid" id="sum-grid" style="margin-top:0"></div></div>
     </div>
 
-    <div class="card" id="sum-card" style="display:none">
-      <div class="sum-grid" id="sum-grid"></div>
+    <!-- Lịch sử chính: Thu Mua (người bán) hoặc Bán (người mua lại hàng) — luôn ngay dưới Tổng quan -->
+    <div class="sec-card sc-blue" id="card-primary" style="display:none">
+      <div class="sec-card-title" id="primary-title">📥 Lịch sử Thu Mua <span class="cnt-badge">(<span id="cnt-primary">0</span>)</span></div>
+      <div class="sec-card-body">
+        <div class="sec-card-note" id="primary-note"></div>
+        <div class="tbl-wrap" id="tbl-primary"></div>
+      </div>
     </div>
 
-    <div class="card" id="card-sg" style="display:none">
-      <div class="sec-title">📒 Lịch sử Gửi sổ (<span id="cnt-sg">0</span>)</div>
-      <div class="tbl-wrap" id="tbl-sg"></div>
+    <div class="sec-card sc-amber" id="card-sg" style="display:none">
+      <div class="sec-card-title">📒 Lịch sử Gửi sổ <span class="cnt-badge">(<span id="cnt-sg">0</span>)</span></div>
+      <div class="sec-card-body"><div class="tbl-wrap" id="tbl-sg"></div></div>
     </div>
 
-    <div class="card" id="card-su" style="display:none">
-      <div class="sec-title">💵 Lịch sử Ứng tiền (<span id="cnt-su">0</span>)</div>
-      <div class="tbl-wrap" id="tbl-su"></div>
+    <div class="sec-card sc-red" id="card-su" style="display:none">
+      <div class="sec-card-title">💵 Lịch sử Ứng tiền <span class="cnt-badge">(<span id="cnt-su">0</span>)</span></div>
+      <div class="sec-card-body"><div class="tbl-wrap" id="tbl-su"></div></div>
     </div>
 
-    <div class="card" id="card-cc" style="display:none">
-      <div class="sec-title">⏱️ Sổ Chấm Công</div>
-      <div id="cc-list"></div>
+    <div class="sec-card sc-purple" id="card-cc" style="display:none">
+      <div class="sec-card-title">⏱️ Sổ Chấm Công</div>
+      <div class="sec-card-body"><div id="cc-list"></div></div>
     </div>
 
   </div>
@@ -246,7 +280,7 @@ function toast(msg){
 }
 function getConnStatusText(){
   if (!navigator.onLine) return '❌ Lỗi kết nối';
-  return sbUser ? '✅ Đã kết nối' : '⚠️ Chưa kết nối';
+  return sbUser ? '✅ Đã kết nối - tự động đồng bộ khi có dữ liệu mới' : '⚠️ Chưa kết nối';
 }
 function refreshConnStatus(){
   var el = document.getElementById('header-sub');
@@ -612,7 +646,7 @@ function rowsToTable(rows, cols, footLabel, footKey){
 function renderCustomerData(ten, id, data, isAdminCall){
   if (!isAdminCall) {
     document.getElementById('data-ten').textContent = '👤 ' + ten;
-    document.getElementById('data-id').textContent = 'Mã KH: ' + id;
+    document.getElementById('data-id').textContent = id;
   }
 
   var muaChotDate = getMuaChotMocFor(data.muaChotMap||{}, ten); // chuỗi 'yyyy-mm-dd' đã chốt đến hết ngày này, hoặc '' nếu chưa chốt

@@ -1,4 +1,4 @@
-# Sổ Khách Hàng (v1.13)
+# Sổ Khách Hàng (v1.14)
 
 Ứng dụng đồng hành ("máy khách") của app **Mua Bán Mủ Cao Su**. Cài trên điện thoại của khách hàng bán mủ, cho phép họ tự tra cứu sổ **Thu Mua / Gửi sổ / Ứng tiền** của riêng mình — không xem được dữ liệu của khách hàng khác, và không xem được **Bán** (giao dịch bán cho vựa lớn, không liên quan tới khách hàng cá nhân).
 
@@ -29,6 +29,7 @@ nguyentai219.github.io/XemSoKhachHang/
 
 | Phiên bản | Ngày | Thay đổi |
 |---|---|---|
+| **v1.14** | 2026-07 | (1) Tách riêng tên app "Sổ Khách Hàng" (cố định, không đổi) và số phiên bản (đặt trong 1 span/nhãn riêng phía sau tên) — từ nay số phiên bản không còn bị coi là "1 phần của tên app" nữa, mỗi lần cập nhật chỉ sửa đúng phần số phiên bản. (2) Thu nhỏ header cho gọn (giảm khoảng đệm, cỡ chữ). (3) Dòng chữ dưới tên app khi đã vào app không còn hiện **email tài khoản** nữa mà đổi thành trạng thái kết nối đơn giản: "✅ Đã kết nối" / "⚠️ Chưa kết nối" / "❌ Lỗi kết nối" (tự cập nhật khi mất/có mạng). Thông tin tài khoản (email) chuyển vào ⚙️ Cài đặt, hiện ngay phía trên nút "🚪 Đăng xuất tài khoản đồng bộ" dưới dạng "👤 Đã đăng nhập: ..." |
 | **v1.13** | 2026-07 | (1) Thêm nút "🕘 Các mã đã nhập" cạnh ô Mã khách hàng — hiện danh sách tên + mã đã từng tra cứu thành công trên chính máy này (lưu cục bộ, tối đa 20 mã gần nhất, không đồng bộ lên Supabase), bấm vào tên nào là tra cứu ngay mã đó, không cần gõ lại. Nút chỉ hiện khi đã có ít nhất 1 mã từng tra cứu. (2) Thêm công tắc bật/tắt trong ⚙️ Cài đặt: "🔒 Hỏi mật khẩu khi mở Cài đặt" — mặc định vẫn BẬT như trước, nếu tắt thì lần mở Cài đặt sau sẽ vào thẳng không cần nhập mật khẩu giao dịch nữa (dùng khi 1 người dùng riêng máy, không có ai khác bấm nhầm) |
 | **v1.12** | 2026-07 | Đồng bộ theo app chính: Mã khách hàng đổi từ kiểu chữ+số (VD: 7FDNP) sang **thuần số 5 chữ số** (VD: 04821) — dễ đọc, dễ nhập hơn cho người lớn tuổi. Ô nhập Mã khách hàng đổi sang bàn phím số, placeholder ví dụ đổi thành số |
 | **v1.11** | 2026-07 | Sửa lỗi app đứng yên ở bản cũ dù chủ vựa đã cập nhật app chính: thêm banner "🔄 Đã có bản cập nhật mới" tự hiện khi phát hiện bản mới, bấm vào để tải lại đúng bản mới nhất |

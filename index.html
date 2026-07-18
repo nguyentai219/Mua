@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<title>Sổ Khách Hàng v1.13</title>
+<title>Sổ Khách Hàng v1.14</title>
 <meta name="theme-color" content="#1a472a">
 <meta name="format-detection" content="telephone=no,email=no,address=no">
 <meta name="mobile-web-app-capable" content="yes">
@@ -26,9 +26,10 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:'Be Vietnam Pro',sans-serif;background:var(--g50);color:var(--g800);min-height:100vh;max-width:480px;margin:0 auto}
-.header{background:linear-gradient(135deg,var(--gd),var(--gm));color:#fff;padding:18px 16px 22px;border-radius:0 0 20px 20px;box-shadow:var(--s2)}
-.header-title{font-size:17px;font-weight:800;display:flex;align-items:center;gap:8px}
-.header-sub{font-size:11.5px;color:rgba(255,255,255,.75);margin-top:4px}
+.header{background:linear-gradient(135deg,var(--gd),var(--gm));color:#fff;padding:12px 16px 14px;border-radius:0 0 16px 16px;box-shadow:var(--s2)}
+.header-title{font-size:15px;font-weight:800;display:flex;align-items:center;gap:6px}
+.header-ver{font-size:11px;font-weight:600;color:rgba(255,255,255,.7);letter-spacing:.3px}
+.header-sub{font-size:11px;color:rgba(255,255,255,.75);margin-top:3px}
 .page{padding:16px}
 .card{background:#fff;border-radius:var(--r);box-shadow:var(--s1);padding:18px;margin-bottom:14px}
 .fl{font-size:12px;font-weight:700;color:var(--g600);margin-bottom:6px;display:block}
@@ -79,7 +80,7 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
 
 <div class="header">
   <div class="top-actions">
-    <div class="header-title">📇 Sổ Khách Hàng v1.13</div>
+    <div class="header-title">📇 Sổ Khách Hàng <span class="header-ver" id="app-ver">v1.14</span></div>
     <button class="icon-btn" id="btn-settings-top" style="display:none" onclick="openSettings()">⚙️</button>
   </div>
   <div class="header-sub" id="header-sub">Mua Bán Mủ Cao Su — dành cho người bán tra cứu sổ sách của mình</div>
@@ -168,7 +169,11 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
     <div class="settings-title">⚙️ Cài đặt</div>
 
     <button class="btn btn-out" id="btn-switch-code" onclick="onSwitchCode()">🔍 Tra cứu mã khác</button>
-    <button class="btn btn-out" onclick="doLogout()">🚪 Đăng xuất tài khoản đồng bộ</button>
+
+    <div style="margin-top:10px;padding-top:12px;border-top:1px solid var(--g100)">
+      <div style="font-size:11.5px;color:var(--g600);margin-bottom:8px" id="settings-account-line">👤 Đã đăng nhập: —</div>
+      <button class="btn btn-out" style="margin-top:0" onclick="doLogout()">🚪 Đăng xuất tài khoản đồng bộ</button>
+    </div>
 
     <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 2px;margin-top:6px;border-top:1px solid var(--g100)">
       <div style="font-size:13px;color:var(--g600);font-weight:700;padding-right:10px">🔒 Hỏi mật khẩu khi mở Cài đặt</div>
@@ -239,6 +244,18 @@ function toast(msg){
   clearTimeout(window._toastTimer);
   window._toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 2600);
 }
+function getConnStatusText(){
+  if (!navigator.onLine) return '❌ Lỗi kết nối';
+  return sbUser ? '✅ Đã kết nối' : '⚠️ Chưa kết nối';
+}
+function refreshConnStatus(){
+  var el = document.getElementById('header-sub');
+  if (!el) return;
+  var loginActive = document.getElementById('scr-login').classList.contains('active');
+  if (!loginActive) el.textContent = getConnStatusText();
+}
+window.addEventListener('online', refreshConnStatus);
+window.addEventListener('offline', refreshConnStatus);
 function showScreen(name){
   ['login','lookup','data'].forEach(function(s){
     document.getElementById('scr-'+s).classList.toggle('active', s===name);
@@ -246,7 +263,7 @@ function showScreen(name){
   document.getElementById('btn-settings-top').style.display = (name==='login') ? 'none' : 'inline-flex';
   document.getElementById('header-sub').textContent = (name==='login')
     ? 'Mua Bán Mủ Cao Su — dành cho người bán tra cứu sổ sách của mình'
-    : (sbUser && sbUser.email ? ('Đã kết nối: ' + sbUser.email) : '');
+    : getConnStatusText();
   if (name === 'lookup') updateCodeHistoryBtnVisibility();
 }
 
@@ -291,8 +308,14 @@ function confirmSettingsPw(){
   closeSettingsPwPrompt();
   showSettingsMenu();
 }
+function renderSettingsAccountLine(){
+  var el = document.getElementById('settings-account-line');
+  if (!el) return;
+  el.textContent = (sbUser && sbUser.email) ? ('👤 Đã đăng nhập: ' + sbUser.email) : '👤 Chưa đăng nhập';
+}
 function showSettingsMenu(){
   renderSettingsPwToggle();
+  renderSettingsAccountLine();
   document.getElementById('settings-ov').classList.add('show');
 }
 function closeSettings(){ document.getElementById('settings-ov').classList.remove('show'); }

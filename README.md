@@ -1,4 +1,4 @@
-# Sổ Khách Hàng (v1.17)
+# Sổ Khách Hàng (v1.18)
 
 Ứng dụng đồng hành ("máy khách") của app **Mua Bán Mủ Cao Su**. Cài trên điện thoại của khách hàng bán mủ, cho phép họ tự tra cứu sổ **Thu Mua / Gửi sổ / Ứng tiền** của riêng mình — không xem được dữ liệu của khách hàng khác, và không xem được **Bán** (giao dịch bán cho vựa lớn, không liên quan tới khách hàng cá nhân).
 
@@ -29,6 +29,7 @@ nguyentai219.github.io/XemSoKhachHang/
 
 | Phiên bản | Ngày | Thay đổi |
 |---|---|---|
+| **v1.18** | 2026-07 | (1) Bỏ bo góc dưới của header để nối liền thẳng với viền khung bên dưới (trước đó góc bo tròn làm đường viền bị hở, trông như 2 khối rời); tăng độ dày viền từ 2px lên 3px cho rõ, dễ nhìn hơn. (2) Bỏ 2 dòng "Gửi sổ — Chưa chốt" và "Ứng tiền — Chưa chốt" trong Tổng quan, chỉ còn Tổng cộng và Đã chốt. (3) Dòng trạng thái thêm ngày/tháng: "✅ Đã kết nối - cập nhật lúc: HH:MM:SS ngày dd/mm" |
 | **v1.17** | 2026-07 | (1) Đưa khối "📊 Tổng quan" xuống cuối cùng (sau Chấm Công) và làm chi tiết hơn: thêm số lượt giao dịch từng loại, tách riêng Gửi sổ/Ứng tiền thành Tổng cộng — Chưa chốt — Đã chốt thay vì chỉ 1 dòng gộp như trước. (2) Dòng trạng thái dưới tên app gộp chung giờ cập nhật: "✅ Đã kết nối - cập nhật lúc: HH:MM:SS" (tự cập nhật mỗi khi có dữ liệu mới, kể cả tự làm mới ngầm), bỏ dòng "🕐 Cập nhật lúc" riêng trong Tổng quan vì đã chuyển lên đây. (3) Thêm viền xanh mỏng nối liền từ header xuống bao quanh toàn bộ các khối bên dưới, gộp header + nội dung thành 1 khối thống nhất |
 | **v1.16** | 2026-07 | Làm nổi bật giao diện màn xem sổ theo mẫu app "Quản Lý Heo": mỗi loại sổ (Tổng quan, Thu Mua, Gửi sổ, Ứng tiền, Chấm Công) nay có khung viền màu riêng + thanh tiêu đề tô nền màu bao trọn khung dữ liệu của loại đó (xanh lá/xanh dương/vàng/đỏ/tím), dễ phân biệt khi lướt nhanh. Khối tên khách hàng đưa lên đầu, nổi bật: tên bên trái, "Mã khách hàng" + mã số bên phải, khung nền xanh lá đậm |
 | **v1.15** | 2026-07 | Đổi bộ icon (icon-192.png, icon-512.png, apple-touch-icon.png, logo.png) sang icon tròn mới (biểu tượng bắt tay + túi tiền). Header đổi bố cục giống app chính: icon tròn nằm bên trái, kích thước khớp đúng chiều cao khối 2 dòng chữ bên phải (tên app + dòng trạng thái), không lớn hơn và không tràn xuống dưới dòng trạng thái; bỏ emoji 📇 cũ trước tên app. Đổi chữ trạng thái "✅ Đã kết nối" thành "✅ Đã kết nối - tự động đồng bộ khi có dữ liệu mới" |

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<title>Sổ Khách Hàng v1.17</title>
+<title>Sổ Khách Hàng v1.18</title>
 <meta name="theme-color" content="#1a472a">
 <meta name="format-detection" content="telephone=no,email=no,address=no">
 <meta name="mobile-web-app-capable" content="yes">
@@ -26,11 +26,11 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:'Be Vietnam Pro',sans-serif;background:var(--g50);color:var(--g800);min-height:100vh;max-width:480px;margin:0 auto}
-.header{background:linear-gradient(135deg,var(--gd),var(--gm));color:#fff;padding:12px 16px 14px;border-radius:0 0 16px 16px;box-shadow:var(--s2)}
+.header{background:linear-gradient(135deg,var(--gd),var(--gm));color:#fff;padding:12px 16px 14px;box-shadow:var(--s2)}
 .header-title{font-size:15px;font-weight:800;display:flex;align-items:center;gap:6px}
 .header-ver{font-size:11px;font-weight:600;color:rgba(255,255,255,.7);letter-spacing:.3px}
 .header-sub{font-size:11px;color:rgba(255,255,255,.75);margin-top:3px}
-.page{padding:16px;border:2px solid var(--gd);border-top:none;border-radius:0 0 16px 16px;margin-top:-1px}
+.page{padding:16px;border:3px solid var(--gd);border-top:none;border-radius:0 0 16px 16px}
 .card{background:#fff;border-radius:var(--r);box-shadow:var(--s1);padding:18px;margin-bottom:14px}
 .fl{font-size:12px;font-weight:700;color:var(--g600);margin-bottom:6px;display:block}
 .fi{width:100%;padding:12px 14px;border:1.5px solid var(--g200);border-radius:var(--r);font-family:'Be Vietnam Pro',sans-serif;font-size:15px;margin-bottom:14px;background:#fff}
@@ -103,7 +103,7 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
     <div class="header-brand">
       <img src="icon-192.png" alt="Logo" class="header-icon">
       <div class="header-text">
-        <div class="header-title">Sổ Khách Hàng <span class="header-ver" id="app-ver">v1.17</span></div>
+        <div class="header-title">Sổ Khách Hàng <span class="header-ver" id="app-ver">v1.18</span></div>
         <div class="header-sub" id="header-sub">Mua Bán Mủ Cao Su — dành cho người bán tra cứu sổ sách của mình</div>
       </div>
     </div>
@@ -283,7 +283,11 @@ var _lastDataUpdateAt = null;
 function getConnStatusText(){
   if (!navigator.onLine) return '❌ Lỗi kết nối';
   if (!sbUser) return '⚠️ Chưa kết nối';
-  var timeStr = _lastDataUpdateAt ? _lastDataUpdateAt.toLocaleTimeString('vi-VN') : '';
+  var timeStr = '';
+  if (_lastDataUpdateAt) {
+    var d = _lastDataUpdateAt;
+    timeStr = d.toLocaleTimeString('vi-VN') + ' ngày ' + String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0');
+  }
   return '✅ Đã kết nối' + (timeStr ? (' - cập nhật lúc: ' + timeStr) : '');
 }
 function refreshConnStatus(){
@@ -711,20 +715,16 @@ function renderCustomerData(ten, id, data, isAdminCall){
   // ── TỔNG QUAN: chi tiết đầy đủ hơn — tổng + số lượt + tách đã chốt/chưa chốt ──
   var tongSgAll = sg.reduce(function(s,x){ return s + (x.tt||0); }, 0);
   var tongSgChot = sg.filter(function(r){ return r.chot; }).reduce(function(s,x){ return s + (x.tt||0); }, 0);
-  var tongSgMo = sg.filter(function(r){ return !r.chot; }).reduce(function(s,x){ return s + (x.tt||0); }, 0);
   var tongSuAll = su.reduce(function(s,x){ return s + (x.tien||0); }, 0);
   var tongSuChot = su.filter(function(r){ return r.chot; }).reduce(function(s,x){ return s + (x.tien||0); }, 0);
-  var tongSuMo = su.filter(function(r){ return !r.chot; }).reduce(function(s,x){ return s + (x.tien||0); }, 0);
   var sumHtml = '<div class="sum-box"><div class="sum-lbl">' + (isBuyer ? '🚛 Tổng đã mua' : '📥 Tổng Thu Mua') + '</div><div class="sum-val" style="color:var(--gd)">' + fmtVND(primaryTotal) + 'đ</div>'
     + '<div class="sum-sub">' + primaryRows.length + ' lượt giao dịch' + (muaSoAn > 0 ? ', ' + muaSoAn + ' lượt đã ẩn (đã chốt)' : '') + '</div></div>';
   if (sg.length > 0) {
     sumHtml += '<div class="sum-box"><div class="sum-lbl">📒 Gửi sổ — Tổng cộng</div><div class="sum-val" style="color:var(--gold)">' + fmtVND(tongSgAll) + 'đ</div><div class="sum-sub">' + sg.length + ' lượt giao dịch</div></div>';
-    sumHtml += '<div class="sum-box"><div class="sum-lbl">📒 Gửi sổ — Chưa chốt</div><div class="sum-val" style="color:var(--gold)">' + fmtVND(tongSgMo) + 'đ</div></div>';
     if (tongSgChot > 0) sumHtml += '<div class="sum-box"><div class="sum-lbl">📒 Gửi sổ — Đã chốt</div><div class="sum-val" style="color:var(--g600)">' + fmtVND(tongSgChot) + 'đ</div></div>';
   }
   if (su.length > 0) {
     sumHtml += '<div class="sum-box"><div class="sum-lbl">💵 Ứng tiền — Tổng cộng</div><div class="sum-val" style="color:var(--red)">' + fmtVND(tongSuAll) + 'đ</div><div class="sum-sub">' + su.length + ' lượt giao dịch</div></div>';
-    sumHtml += '<div class="sum-box"><div class="sum-lbl">💵 Ứng tiền — Chưa chốt</div><div class="sum-val" style="color:var(--red)">' + fmtVND(tongSuMo) + 'đ</div></div>';
     if (tongSuChot > 0) sumHtml += '<div class="sum-box"><div class="sum-lbl">💵 Ứng tiền — Đã chốt</div><div class="sum-val" style="color:var(--g600)">' + fmtVND(tongSuChot) + 'đ</div></div>';
   }
   if (cc.length > 0) sumHtml += '<div class="sum-box"><div class="sum-lbl">⏱️ Sổ Chấm Công</div><div class="sum-val" style="color:var(--g600)">' + cc.length + ' kỳ chấm công</div></div>';

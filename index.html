@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<title>Sổ Khách Hàng v1.18</title>
+<title>Sổ Khách Hàng v1.20</title>
 <meta name="theme-color" content="#1a472a">
 <meta name="format-detection" content="telephone=no,email=no,address=no">
 <meta name="mobile-web-app-capable" content="yes">
@@ -103,7 +103,7 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
     <div class="header-brand">
       <img src="icon-192.png" alt="Logo" class="header-icon">
       <div class="header-text">
-        <div class="header-title">Sổ Khách Hàng <span class="header-ver" id="app-ver">v1.18</span></div>
+        <div class="header-title">Sổ Khách Hàng <span class="header-ver" id="app-ver">v1.20</span></div>
         <div class="header-sub" id="header-sub">Mua Bán Mủ Cao Su — dành cho người bán tra cứu sổ sách của mình</div>
       </div>
     </div>
@@ -203,6 +203,7 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
   <div class="settings-box">
     <div class="settings-title">⚙️ Cài đặt</div>
 
+    <button class="btn btn-out" style="margin-top:0" onclick="openHuongDan()">📖 Hướng dẫn sử dụng</button>
     <button class="btn btn-out" id="btn-switch-code" onclick="onSwitchCode()">🔍 Tra cứu mã khác</button>
 
     <div style="margin-top:10px;padding-top:12px;border-top:1px solid var(--g100)">
@@ -220,6 +221,75 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
     </div>
 
     <button class="btn btn-plain" onclick="closeSettings()">Đóng</button>
+  </div>
+</div>
+
+<!-- HƯỚNG DẪN SỬ DỤNG -->
+<div class="modal-ov" id="huongdan-ov" onclick="if(event.target===this) closeHuongDan()">
+  <div class="settings-box" style="max-height:85vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <span style="font-size:26px">📇</span>
+      <div>
+        <div class="settings-title" style="margin-bottom:2px">Hướng dẫn sử dụng</div>
+        <div style="font-size:11px;color:var(--g600)" id="hd-ver-line">Sổ Khách Hàng</div>
+      </div>
+    </div>
+
+    <div style="background:#f0fdf4;border-radius:12px;padding:12px;margin-bottom:10px;border-left:3px solid var(--gd)">
+      <div style="font-size:13px;font-weight:800;color:var(--gd);margin-bottom:6px">1️⃣ Đăng nhập lần đầu</div>
+      <div style="font-size:12px;color:var(--g800);line-height:1.7">
+        • Chỉ cần làm 1 lần trên máy — nhập đúng tài khoản đồng bộ (email + mật khẩu) do chủ vựa cung cấp<br>
+        • Lần sau mở app sẽ vào thẳng, không cần đăng nhập lại
+      </div>
+    </div>
+
+    <div style="background:#eff6ff;border-radius:12px;padding:12px;margin-bottom:10px;border-left:3px solid #2563eb">
+      <div style="font-size:13px;font-weight:800;color:#1d4ed8;margin-bottom:6px">2️⃣ Nhập Mã khách hàng</div>
+      <div style="font-size:12px;color:var(--g800);line-height:1.7">
+        • Nhập đúng <b>5 chữ số</b> chủ vựa đưa cho bạn, rồi nhấn <b>🔍 Xem sổ của tôi</b><br>
+        • Mã đã tra đúng sẽ tự nhớ — lần sau mở app hiện thẳng sổ luôn, không cần nhập lại<br>
+        • Nhấn <b>🕘 Các mã đã nhập</b> cạnh ô nhập để chọn nhanh lại mã đã tra trước đó trên máy này (không cần gõ lại)
+      </div>
+    </div>
+
+    <div style="background:#faf5ff;border-radius:12px;padding:12px;margin-bottom:10px;border-left:3px solid #9333ea">
+      <div style="font-size:13px;font-weight:800;color:#7e22ce;margin-bottom:6px">3️⃣ Xem sổ sách</div>
+      <div style="font-size:12px;color:var(--g800);line-height:1.7">
+        • Tên và Mã khách hàng hiện nổi bật ngay đầu trang, khung nền xanh lá<br>
+        • Mỗi loại sổ có khung màu riêng để dễ phân biệt: <b style="color:#1e40af">📥 Thu Mua</b> (xanh dương), <b style="color:#92400e">📒 Gửi sổ</b> (vàng), <b style="color:#991b1b">💵 Ứng tiền</b> (đỏ), <b style="color:#5b21b6">⏱️ Chấm Công</b> (tím) — chỉ hiện khung nào có dữ liệu thật của bạn<br>
+        • Khung <b>📊 Tổng quan</b> ở cuối trang gộp số liệu chi tiết của mọi loại sổ, kèm số lượt giao dịch và tách rõ đã chốt/chưa chốt<br>
+        • Sổ tự làm mới ngầm mỗi 15 giây khi đang xem, không cần bấm tải lại
+      </div>
+    </div>
+
+    <div style="background:#fefce8;border-radius:12px;padding:12px;margin-bottom:10px;border-left:3px solid #ca8a04">
+      <div style="font-size:13px;font-weight:800;color:#a16207;margin-bottom:6px">4️⃣ Trạng thái kết nối</div>
+      <div style="font-size:12px;color:var(--g800);line-height:1.7">
+        Dòng chữ ngay dưới tên app cho biết:<br>
+        • <b style="color:#16a34a">✅ Đã kết nối - cập nhật lúc:...</b> — sổ đang hiện đúng dữ liệu mới nhất<br>
+        • <b style="color:#ca8a04">⚠️ Chưa kết nối</b> — chưa đăng nhập xong hoặc đang chờ kết nối<br>
+        • <b style="color:#dc2626">❌ Lỗi kết nối</b> — máy đang mất mạng, kết nối lại mạng để xem tiếp
+      </div>
+    </div>
+
+    <div style="background:#fff7ed;border-radius:12px;padding:12px;margin-bottom:10px;border-left:3px solid #ea580c">
+      <div style="font-size:13px;font-weight:800;color:#c2410c;margin-bottom:6px">⚙️ Cài đặt</div>
+      <div style="font-size:12px;color:var(--g800);line-height:1.7">
+        • <b>🔍 Tra cứu mã khác</b>: thoát sổ đang xem để nhập mã khách hàng khác<br>
+        • <b>👤 Đã đăng nhập</b>: hiện tài khoản đồng bộ đang dùng trên máy này<br>
+        • <b>🚪 Đăng xuất tài khoản đồng bộ</b>: chỉ dùng khi đổi sang tài khoản đồng bộ khác — sau khi đăng xuất phải đăng nhập lại như lần đầu<br>
+        • <b>🔒 Hỏi mật khẩu khi mở Cài đặt</b>: bật/tắt việc phải nhập mật khẩu giao dịch mỗi lần vào Cài đặt — mặc định BẬT, tắt đi nếu máy chỉ 1 mình bạn dùng
+      </div>
+    </div>
+
+    <div style="background:#fef3c7;border-radius:12px;padding:12px;margin-bottom:14px;border-left:3px solid #d97706">
+      <div style="font-size:13px;font-weight:800;color:#92400e;margin-bottom:6px">🔑 Chế độ quản trị (dành cho chủ vựa)</div>
+      <div style="font-size:12px;color:var(--g800);line-height:1.7">
+        Nhập đúng mã quản trị (khác với Mã khách hàng 5 số) vào ô nhập mã sẽ mở được danh sách chọn xem sổ của <b>bất kỳ khách hàng nào</b>, dùng khi cần kiểm tra hộ hoặc hỗ trợ khách
+      </div>
+    </div>
+
+    <button class="btn btn-out" style="margin-top:0" onclick="closeHuongDan()">✅ Đã hiểu</button>
   </div>
 </div>
 
@@ -312,7 +382,7 @@ function showScreen(name){
 var SETTINGS_PW_ENABLED_KEY = 'xskh_settings_pw_enabled';
 function isSettingsPwEnabled(){
   var v = localStorage.getItem(SETTINGS_PW_ENABLED_KEY);
-  return v === null ? true : v === '1'; // mặc định BẬT, giữ đúng hành vi trước đây nếu chưa từng đổi
+  return v === '1'; // mặc định TẮT (kể cả lần cài đặt đầu hoặc sau khi xoá lịch sử duyệt web) — chỉ bật khi người dùng tự bật thủ công trong Cài đặt
 }
 function setSettingsPwEnabled(v){ localStorage.setItem(SETTINGS_PW_ENABLED_KEY, v ? '1' : '0'); }
 function renderSettingsPwToggle(){
@@ -355,6 +425,13 @@ function renderSettingsAccountLine(){
   if (!el) return;
   el.textContent = (sbUser && sbUser.email) ? ('👤 Đã đăng nhập: ' + sbUser.email) : '👤 Chưa đăng nhập';
 }
+function openHuongDan(){
+  var verEl = document.getElementById('app-ver');
+  var hdVerEl = document.getElementById('hd-ver-line');
+  if (hdVerEl) hdVerEl.textContent = 'Sổ Khách Hàng ' + (verEl ? verEl.textContent : '');
+  document.getElementById('huongdan-ov').classList.add('show');
+}
+function closeHuongDan(){ document.getElementById('huongdan-ov').classList.remove('show'); }
 function showSettingsMenu(){
   renderSettingsPwToggle();
   renderSettingsAccountLine();

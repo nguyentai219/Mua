@@ -1,4 +1,4 @@
-# Sổ Khách Hàng (v1.18)
+# Sổ Khách Hàng (v1.20)
 
 Ứng dụng đồng hành ("máy khách") của app **Mua Bán Mủ Cao Su**. Cài trên điện thoại của khách hàng bán mủ, cho phép họ tự tra cứu sổ **Thu Mua / Gửi sổ / Ứng tiền** của riêng mình — không xem được dữ liệu của khách hàng khác, và không xem được **Bán** (giao dịch bán cho vựa lớn, không liên quan tới khách hàng cá nhân).
 
@@ -29,6 +29,8 @@ nguyentai219.github.io/XemSoKhachHang/
 
 | Phiên bản | Ngày | Thay đổi |
 |---|---|---|
+| **v1.20** | 2026-07 | Đổi mặc định công tắc "🔒 Hỏi mật khẩu khi mở Cài đặt" thành **TẮT** (kể cả lần cài đặt đầu tiên hoặc sau khi xoá lịch sử duyệt web) — chỉ hỏi mật khẩu nếu người dùng tự bật thủ công trong Cài đặt |
+| **v1.19** | 2026-07 | Thêm mới màn "📖 Hướng dẫn sử dụng" (trước đây chưa có) vào ⚙️ Cài đặt: hướng dẫn đăng nhập lần đầu, nhập Mã khách hàng, xem sổ theo khung màu, đọc trạng thái kết nối, các tuỳ chọn trong Cài đặt, và chế độ quản trị dành cho chủ vựa |
 | **v1.18** | 2026-07 | (1) Bỏ bo góc dưới của header để nối liền thẳng với viền khung bên dưới (trước đó góc bo tròn làm đường viền bị hở, trông như 2 khối rời); tăng độ dày viền từ 2px lên 3px cho rõ, dễ nhìn hơn. (2) Bỏ 2 dòng "Gửi sổ — Chưa chốt" và "Ứng tiền — Chưa chốt" trong Tổng quan, chỉ còn Tổng cộng và Đã chốt. (3) Dòng trạng thái thêm ngày/tháng: "✅ Đã kết nối - cập nhật lúc: HH:MM:SS ngày dd/mm" |
 | **v1.17** | 2026-07 | (1) Đưa khối "📊 Tổng quan" xuống cuối cùng (sau Chấm Công) và làm chi tiết hơn: thêm số lượt giao dịch từng loại, tách riêng Gửi sổ/Ứng tiền thành Tổng cộng — Chưa chốt — Đã chốt thay vì chỉ 1 dòng gộp như trước. (2) Dòng trạng thái dưới tên app gộp chung giờ cập nhật: "✅ Đã kết nối - cập nhật lúc: HH:MM:SS" (tự cập nhật mỗi khi có dữ liệu mới, kể cả tự làm mới ngầm), bỏ dòng "🕐 Cập nhật lúc" riêng trong Tổng quan vì đã chuyển lên đây. (3) Thêm viền xanh mỏng nối liền từ header xuống bao quanh toàn bộ các khối bên dưới, gộp header + nội dung thành 1 khối thống nhất |
 | **v1.16** | 2026-07 | Làm nổi bật giao diện màn xem sổ theo mẫu app "Quản Lý Heo": mỗi loại sổ (Tổng quan, Thu Mua, Gửi sổ, Ứng tiền, Chấm Công) nay có khung viền màu riêng + thanh tiêu đề tô nền màu bao trọn khung dữ liệu của loại đó (xanh lá/xanh dương/vàng/đỏ/tím), dễ phân biệt khi lướt nhanh. Khối tên khách hàng đưa lên đầu, nổi bật: tên bên trái, "Mã khách hàng" + mã số bên phải, khung nền xanh lá đậm |

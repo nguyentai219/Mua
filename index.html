@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<title>Sổ Khách Hàng v1.20</title>
+<title>Sổ Khách Hàng v1.21</title>
 <meta name="theme-color" content="#1a472a">
 <meta name="format-detection" content="telephone=no,email=no,address=no">
 <meta name="mobile-web-app-capable" content="yes">
@@ -103,7 +103,7 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
     <div class="header-brand">
       <img src="icon-192.png" alt="Logo" class="header-icon">
       <div class="header-text">
-        <div class="header-title">Sổ Khách Hàng <span class="header-ver" id="app-ver">v1.20</span></div>
+        <div class="header-title">Sổ Khách Hàng <span class="header-ver" id="app-ver">v1.21</span></div>
         <div class="header-sub" id="header-sub">Mua Bán Mủ Cao Su — dành cho người bán tra cứu sổ sách của mình</div>
       </div>
     </div>
@@ -203,8 +203,7 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
   <div class="settings-box">
     <div class="settings-title">⚙️ Cài đặt</div>
 
-    <button class="btn btn-out" style="margin-top:0" onclick="openHuongDan()">📖 Hướng dẫn sử dụng</button>
-    <button class="btn btn-out" id="btn-switch-code" onclick="onSwitchCode()">🔍 Tra cứu mã khác</button>
+    <button class="btn btn-out" style="margin-top:0" id="btn-switch-code" onclick="onSwitchCode()">🔍 Tra cứu mã khác</button>
 
     <div style="margin-top:10px;padding-top:12px;border-top:1px solid var(--g100)">
       <div style="font-size:11.5px;color:var(--g600);margin-bottom:8px" id="settings-account-line">👤 Đã đăng nhập: —</div>
@@ -219,6 +218,8 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
         <span id="settings-pw-toggle-dot" style="position:absolute;height:18px;width:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3)"></span>
       </label>
     </div>
+
+    <button class="btn btn-out" style="margin-top:10px;border-top:1px solid var(--g100);padding-top:12px" onclick="openHuongDan()">📖 Hướng dẫn sử dụng</button>
 
     <button class="btn btn-plain" onclick="closeSettings()">Đóng</button>
   </div>
@@ -565,7 +566,9 @@ function doLogin(){
     if (res.error) { errEl.textContent = '❌ ' + res.error.message; errEl.style.display = 'block'; return; }
     sbUser = res.data.user;
     document.getElementById('login-pass').value = '';
+    var savedCode = localStorage.getItem(CODE_KEY);
     showScreen('lookup');
+    if (savedCode) { traCuu(savedCode); } // tự đổ lại mã đã lưu, tránh phải nhập lại dù vẫn còn trong bộ nhớ máy
   }).catch(function(e){
     setBtnLoading('btn-login', false, 'Đăng nhập');
     errEl.textContent = '❌ Lỗi: ' + e.message; errEl.style.display = 'block';
@@ -871,6 +874,12 @@ setupAutoRefresh();
 
 // Đăng ký Service Worker (offline shell) + chủ động kiểm tra bản mới, tránh app đứng yên ở bản cũ
 if ('serviceWorker' in navigator) {
+  var _swUpdReloaded = false;
+  function _swAutoReload(){
+    if (_swUpdReloaded) return;
+    _swUpdReloaded = true;
+    location.reload(); // tự động tải lại ngay khi có bản mới, không cần chờ nhấn thông báo
+  }
   window.addEventListener('load', function(){
     navigator.serviceWorker.register('sw.js').then(function(reg){
       document.addEventListener('visibilitychange', function(){
@@ -881,26 +890,14 @@ if ('serviceWorker' in navigator) {
         var nw = reg.installing;
         if (!nw) return;
         nw.addEventListener('statechange', function(){
-          if (nw.state === 'activated' && navigator.serviceWorker.controller) showUpdateBanner();
+          if (nw.state === 'activated' && navigator.serviceWorker.controller) _swAutoReload();
         });
       });
     }).catch(function(){});
-    var _updShown = false;
-    navigator.serviceWorker.addEventListener('controllerchange', function(){
-      if (_updShown) return; _updShown = true;
-      showUpdateBanner();
-    });
+    navigator.serviceWorker.addEventListener('controllerchange', _swAutoReload);
   });
 }
-function showUpdateBanner(){
-  if (document.getElementById('update-banner')) return;
-  var b = document.createElement('div');
-  b.id = 'update-banner';
-  b.textContent = '🔄 Đã có bản cập nhật mới — Nhấn để tải lại';
-  b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#1a472a;color:#fff;text-align:center;padding:11px 10px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;box-shadow:0 2px 8px rgba(0,0,0,.25)';
-  b.onclick = function(){ location.reload(); };
-  document.body.appendChild(b);
-}
+
 </script>
 </body>
 </html>

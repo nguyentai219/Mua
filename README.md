@@ -1,4 +1,4 @@
-# Sổ Khách Hàng (v1.20)
+# Sổ Khách Hàng (v1.21)
 
 Ứng dụng đồng hành ("máy khách") của app **Mua Bán Mủ Cao Su**. Cài trên điện thoại của khách hàng bán mủ, cho phép họ tự tra cứu sổ **Thu Mua / Gửi sổ / Ứng tiền** của riêng mình — không xem được dữ liệu của khách hàng khác, và không xem được **Bán** (giao dịch bán cho vựa lớn, không liên quan tới khách hàng cá nhân).
 
@@ -29,6 +29,7 @@ nguyentai219.github.io/XemSoKhachHang/
 
 | Phiên bản | Ngày | Thay đổi |
 |---|---|---|
+| **v1.21** | 2026-07 | (1) Bỏ banner cập nhật, nay tự động tải lại ngay khi phát hiện bản mới, không cần chạm vào thông báo. (2) Sửa lỗi hay "mất" Mã khách hàng đã nhập khi mở lại app: khi phiên đăng nhập Supabase hết hạn phải đăng nhập tay lại, app trước đây luôn đưa về màn nhập mã trống dù mã cũ vẫn còn lưu trong máy — nay đăng nhập tay lại cũng tự đổ lại đúng mã đã lưu như lúc mở app bình thường. (3) Đưa "📖 Hướng dẫn sử dụng" xuống cuối cùng trong ⚙️ Cài đặt |
 | **v1.20** | 2026-07 | Đổi mặc định công tắc "🔒 Hỏi mật khẩu khi mở Cài đặt" thành **TẮT** (kể cả lần cài đặt đầu tiên hoặc sau khi xoá lịch sử duyệt web) — chỉ hỏi mật khẩu nếu người dùng tự bật thủ công trong Cài đặt |
 | **v1.19** | 2026-07 | Thêm mới màn "📖 Hướng dẫn sử dụng" (trước đây chưa có) vào ⚙️ Cài đặt: hướng dẫn đăng nhập lần đầu, nhập Mã khách hàng, xem sổ theo khung màu, đọc trạng thái kết nối, các tuỳ chọn trong Cài đặt, và chế độ quản trị dành cho chủ vựa |
 | **v1.18** | 2026-07 | (1) Bỏ bo góc dưới của header để nối liền thẳng với viền khung bên dưới (trước đó góc bo tròn làm đường viền bị hở, trông như 2 khối rời); tăng độ dày viền từ 2px lên 3px cho rõ, dễ nhìn hơn. (2) Bỏ 2 dòng "Gửi sổ — Chưa chốt" và "Ứng tiền — Chưa chốt" trong Tổng quan, chỉ còn Tổng cộng và Đã chốt. (3) Dòng trạng thái thêm ngày/tháng: "✅ Đã kết nối - cập nhật lúc: HH:MM:SS ngày dd/mm" |

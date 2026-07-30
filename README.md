@@ -1,4 +1,4 @@
-# Sổ Khách Hàng (v1.27)
+# Sổ Khách Hàng (v1.28)
 
 Ứng dụng đồng hành ("máy khách") của app **Mua Bán Mủ Cao Su**. Cài trên điện thoại của khách hàng bán mủ, cho phép họ tự tra cứu sổ **Thu Mua / Gửi sổ / Ứng tiền** của riêng mình — không xem được dữ liệu của khách hàng khác, và không xem được **Bán** (giao dịch bán cho vựa lớn, không liên quan tới khách hàng cá nhân).
 
@@ -29,6 +29,7 @@ nguyentai219.github.io/XemSoKhachHang/
 
 | Phiên bản | Ngày | Thay đổi |
 |---|---|---|
+| **v1.28** | 2026-07 | Sửa icon 📷 (xem ảnh đính kèm) bị **khuất phía sau, khó thấy** trên màn hình điện thoại — trước đây icon nằm ở cột riêng cuối cùng của bảng nên bị đẩy ra ngoài vùng nhìn thấy khi bảng cuộn ngang; nay icon 📷 gắn liền ngay sau cột **Ngày** (cột đầu tiên, luôn hiển thị không cần cuộn), giống cách hiển thị bên app máy chủ |
 | **v1.27** | 2026-07 | Hiện được **ảnh đính kèm giao dịch** (tính năng mới từ v1.6.0 bên app máy chủ "Mua Bán Mủ Cao Su") — bảng Lịch sử Thu Mua/Bán nay có thêm cột 📷: dòng giao dịch nào có ảnh đính kèm sẽ hiện icon 📷, chạm vào để xem ảnh phóng to toàn màn hình. Chỉ hiển thị, không có chức năng chụp/tải ảnh lên (chức năng đó chỉ có ở app máy chủ) |
 | **v1.26** | 2026-07 | Khối lọc thời gian nay có **3 lựa chọn**: "Xem tất cả", **"Từ ngày... đến ngày hiện tại"** (mới thêm — Đến ngày luôn tự trôi theo đúng hôm nay, không cần chỉnh lại mỗi ngày), và "Từ ngày... Đến ngày..." (cố định cả 2 mốc). Đổi lại quy tắc ghi nhớ: "Xem tất cả" và "Từ ngày...đến ngày hiện tại" luôn được nhớ xuyên suốt qua tắt/mở app; riêng "Từ ngày... Đến ngày..." (cố định) chỉ áp dụng trong phiên đang mở — tắt/mở lại app sẽ tự quay về lựa chọn đã nhớ trước đó (tránh bị kẹt ở 1 khoảng ngày cũ cố định, không thấy được dữ liệu mới của ngày hôm sau). Đồng thời: đổi sang mã khách hàng khác — **hoặc tra cứu/chọn lại đúng mã vừa xem** — đều luôn reset bộ lọc về "Xem tất cả" |
 | **v1.25** | 2026-07 | (1) Khối lọc thời gian: "Đến ngày" nay mặc định LUÔN là **ngày hôm nay** (dù ngày đó chưa có ghi chép nào), thay vì ngày giao dịch mới nhất như trước. (2) Lựa chọn lọc thời gian (Xem tất cả / khoảng ngày đã chọn) nay được **lưu vào máy, nhớ xuyên suốt** kể cả khi tắt/mở lại app hoặc tra cứu mã khách hàng khác — chỉ thay đổi khi chính người dùng chủ động bấm đổi. (3) Icon logo ở đầu trang nay xoay liên tục kiểu đồng xu (hiệu ứng 3D quay quanh trục dọc), giống hệt app Thu Mua |

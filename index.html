@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<title>Sổ Khách Hàng v1.27</title>
+<title>Sổ Khách Hàng v1.28</title>
 <meta name="theme-color" content="#1a472a">
 <meta name="format-detection" content="telephone=no,email=no,address=no">
 <meta name="mobile-web-app-capable" content="yes">
@@ -117,7 +117,7 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
     <div class="header-brand">
       <img src="icon-192.png" alt="Logo" class="header-icon">
       <div class="header-text">
-        <div class="header-title">Sổ Khách Hàng <span class="header-ver" id="app-ver">v1.27</span></div>
+        <div class="header-title">Sổ Khách Hàng <span class="header-ver" id="app-ver">v1.28</span></div>
         <div class="header-sub" id="header-sub">Mua Bán Mủ Cao Su — dành cho người bán tra cứu sổ sách của mình</div>
       </div>
     </div>
@@ -992,17 +992,19 @@ function renderCustomerData(ten, id, data, isAdminCall){
   // onclick để tránh lỗi escape khi URL có ký tự đặc biệt.
   _anhViewUrls = [];
   var colsGD = [
-    {label:'Ngày', fmt:function(r){ return fmtDateSmart(r.date); }},
+    {label:'Ngày', fmt:function(r){
+      var d = fmtDateSmart(r.date);
+      if (r.anh) {
+        var idx = _anhViewUrls.length;
+        _anhViewUrls.push(r.anh);
+        d += ' <span onclick="event.stopPropagation();xemAnhKH('+idx+')" style="cursor:pointer;font-size:13px" title="Xem ảnh đính kèm">📷</span>';
+      }
+      return d;
+    }},
     {label:'KG', key:'kg'},
     {label:'Độ/Loại', fmt:fmtDoOrLoai},
     {label:'Giá', fmt:function(r){ return fmtVND(r.gia); }},
-    {label:'Thành tiền', fmt:function(r){ return fmtVND(r.tt)+'đ'; }, isSum:true},
-    {label:'📷', fmt:function(r){
-      if (!r.anh) return '';
-      var idx = _anhViewUrls.length;
-      _anhViewUrls.push(r.anh);
-      return '<span onclick="xemAnhKH('+idx+')" style="cursor:pointer;font-size:14px" title="Xem ảnh đính kèm">📷</span>';
-    }}
+    {label:'Thành tiền', fmt:function(r){ return fmtVND(r.tt)+'đ'; }, isSum:true}
   ];
   var colsSG = [
     {label:'Ngày', fmt:function(r){ return fmtDateSmart(r.date); }},

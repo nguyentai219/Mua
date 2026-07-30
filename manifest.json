@@ -1,9 +1,8 @@
 {
-  "name": "Sổ Khách Hàng v1.27 - Mua Bán Mủ Cao Su",
-  "short_name": "Sổ Khách Hàng",
-  "description": "Tra cứu sổ Thu Mua, Gửi sổ, Ứng tiền của riêng bạn bằng Mã khách hàng - dành cho người bán mủ - v1.27",
-  "start_url": "./index.html",
-  "scope": "./",
+  "name": "Mua Bán Mủ Cao Su",
+  "short_name": "Mủ Cao Su",
+  "description": "Phần mềm ghi chép mua bán mủ cao su - v1.6.1",
+  "start_url": "/Mucaosu/index.html",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#ddc496",
@@ -14,6 +13,11 @@
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
+  "shortcuts": [
+    { "name": "Thu Mua", "short_name": "Thu Mua", "url": "/Mucaosu/index.html#mua", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "Bán Ra", "short_name": "Bán Ra", "url": "/Mucaosu/index.html#ban", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] }
+  ],
   "categories": ["business", "finance"],
-  "lang": "vi"
+  "lang": "vi",
+  "scope": "/Mucaosu/"
 }

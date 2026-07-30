@@ -1,28 +1,19 @@
-const CACHE = 'xem-so-kh-v1.27';
-// Dùng scope của chính service worker để tự suy ra đường dẫn — không phụ thuộc tên thư mục deploy cụ thể
-const BASE = self.registration.scope; // VD: https://nguyentai219.github.io/XemSoKhachHang/
-const FILES = [
-  BASE,
-  BASE + 'index.html',
-  BASE + 'manifest.json',
-  BASE + 'icon-192.png',
-  BASE + 'icon-512.png',
-  BASE + 'apple-touch-icon.png',
-  BASE + 'splash.png'
-];
+const CACHE = 'mu-cao-su-v1.6.1';
+const FILES = ['/Mucaosu/','/Mucaosu/index.html','/Mucaosu/manifest.json','/Mucaosu/icon-192.png','/Mucaosu/icon-512.png','/Mucaosu/apple-touch-icon.png','/Mucaosu/logo.png','/Mucaosu/splash.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).catch(()=>{}));
-  self.skipWaiting();
+  self.skipWaiting(); // kích hoạt SW mới ngay lập tức
 });
 
 self.addEventListener('activate', e => {
+  // Xóa tất cả cache cũ
   e.waitUntil(
     caches.keys().then(ks =>
       Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))
     )
   );
-  self.clients.claim();
+  self.clients.claim(); // chiếm quyền kiểm soát tất cả tab ngay
 });
 
 self.addEventListener('fetch', e => {
@@ -34,6 +25,7 @@ self.addEventListener('fetch', e => {
     e.respondWith(
       fetch(e.request)
         .then(response => {
+          // Cập nhật cache với bản mới
           const clone = response.clone();
           caches.open(CACHE).then(c => c.put(e.request, clone));
           return response;
@@ -43,7 +35,7 @@ self.addEventListener('fetch', e => {
   } else {
     // Tài nguyên tĩnh (icon, manifest): Cache First — nhanh hơn
     e.respondWith(
-      caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match(BASE + 'index.html')))
+      caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match('/Mucaosu/index.html')))
     );
   }
 });

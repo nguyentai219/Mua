@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<title>Sổ Khách Hàng v1.21</title>
+<title>Sổ Khách Hàng v1.27</title>
 <meta name="theme-color" content="#1a472a">
 <meta name="format-detection" content="telephone=no,email=no,address=no">
 <meta name="mobile-web-app-capable" content="yes">
@@ -86,7 +86,12 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#2d3d36;color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90%;text-align:center}
 .toast.show{opacity:1}
 .top-actions{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
-.header-brand{display:flex;align-items:center;gap:8px;min-width:0}
+.header-brand{display:flex;align-items:center;gap:8px;min-width:0;perspective:200px}
+/* Icon logo tròn xoay liên tục kiểu đồng xu quay (xoay quanh trục dọc, nhờ có perspective ở khung cha
+   .header-brand nên khi xoay ảnh sẽ tự bị thu hẹp bề ngang giữa chừng, tạo đúng hiệu ứng 3D như đồng xu
+   thật đang xoay chứ không phải chỉ xoay phẳng 2D) — port từ app Thu Mua. */
+@keyframes coinSpin{ 0%{transform:rotateY(0deg)} 100%{transform:rotateY(360deg)} }
+.header-icon{ animation:coinSpin 3.2s linear infinite; backface-visibility:visible }
 .header-icon{width:34px;height:34px;min-width:34px;border-radius:50%;object-fit:cover;display:block}
 .header-text{min-width:0}
 .icon-btn{background:rgba(255,255,255,.15);border:none;color:#fff;font-size:17px;width:34px;height:34px;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center}
@@ -94,6 +99,15 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
 .modal-ov.show{display:flex}
 .settings-box{background:#fff;border-radius:16px;padding:20px;width:100%;max-width:360px;box-shadow:var(--s3)}
 .settings-title{font-size:15px;font-weight:800;color:var(--gd);margin-bottom:14px}
+/* ── Khung cuốn chiếu thông tin liên hệ khách hàng (SĐT/CCCD/Địa chỉ), hiện ngay dưới khối tên +
+   mã khách hàng — cùng cơ chế với app Thu Mua: tiêu đề trước, rồi cuốn từng thông tin mỗi 3 giây ── */
+.kh-info-ticker{display:none;align-items:center;gap:5px;font-size:11.5px;color:var(--g600);margin:-6px 0 14px;height:15px;overflow:hidden;padding:0 2px}
+.kh-info-ticker .kh-ic{flex-shrink:0;font-size:11px}
+.kh-info-ticker .kh-val{display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@keyframes khTickerIn{ from{transform:translateY(100%);opacity:0} to{transform:translateY(0);opacity:1} }
+/* ── Khối lọc thời gian xem, đặt giữa khối tên khách hàng và lịch sử thu mua ── */
+.date-filter-box{display:flex;gap:8px;margin-top:10px}
+.date-filter-box > div{flex:1}
 </style>
 </head>
 <body>
@@ -103,7 +117,7 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
     <div class="header-brand">
       <img src="icon-192.png" alt="Logo" class="header-icon">
       <div class="header-text">
-        <div class="header-title">Sổ Khách Hàng <span class="header-ver" id="app-ver">v1.21</span></div>
+        <div class="header-title">Sổ Khách Hàng <span class="header-ver" id="app-ver">v1.27</span></div>
         <div class="header-sub" id="header-sub">Mua Bán Mủ Cao Su — dành cho người bán tra cứu sổ sách của mình</div>
       </div>
     </div>
@@ -150,6 +164,7 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
         <div class="cust-id" id="data-id"></div>
       </div>
     </div>
+    <div class="kh-info-ticker" id="cust-info-ticker"></div>
 
     <div class="sec-card sc-amber" id="admin-header-card" style="display:none">
       <div class="sec-card-title">🔑 Chế độ quản trị</div>
@@ -162,6 +177,27 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
 
     <div id="data-empty-hint" class="card" style="display:none">
       <div class="empty">👆 Chọn 1 người bán ở trên để xem sổ chi tiết</div>
+    </div>
+
+    <!-- Lọc theo thời gian: áp dụng cho Lịch sử Thu Mua/Bán, Gửi sổ, Ứng tiền và Tổng quan bên dưới -->
+    <div class="card" id="date-filter-card" style="display:none;padding:14px 16px">
+      <div class="fl" style="margin-bottom:8px">🗓 Lọc theo thời gian</div>
+      <select id="date-filter-mode" class="fi" style="margin-bottom:0" onchange="onDateFilterModeChange()">
+        <option value="all">Xem tất cả</option>
+        <option value="fromToday">Từ ngày... đến ngày hiện tại</option>
+        <option value="range">Từ ngày... Đến ngày...</option>
+      </select>
+      <div class="date-filter-box" id="date-range-box" style="display:none">
+        <div>
+          <label class="fl" style="margin-bottom:4px">Từ ngày</label>
+          <input type="date" id="date-filter-from" class="fi" style="margin-bottom:0;font-size:13px;padding:10px 8px" onchange="onDateFilterChange()">
+        </div>
+        <div id="date-filter-to-box">
+          <label class="fl" style="margin-bottom:4px">Đến ngày</label>
+          <input type="date" id="date-filter-to" class="fi" style="margin-bottom:0;font-size:13px;padding:10px 8px" onchange="onDateFilterChange()">
+        </div>
+      </div>
+      <div id="date-filter-today-hint" style="display:none;font-size:11px;color:var(--g600);margin-top:2px">📆 Đến ngày hiện tại — tự cập nhật mỗi ngày, không cần chỉnh lại</div>
     </div>
 
     <!-- Lịch sử chính: Thu Mua (người bán) hoặc Bán (người mua lại hàng) — luôn ngay dưới tên -->
@@ -220,6 +256,8 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
     </div>
 
     <button class="btn btn-out" style="margin-top:10px;border-top:1px solid var(--g100);padding-top:12px" onclick="openHuongDan()">📖 Hướng dẫn sử dụng</button>
+
+    <button class="btn btn-out" style="margin-top:8px" onclick="openGioiThieu()">ℹ️ Giới thiệu phần mềm</button>
 
     <button class="btn btn-plain" onclick="closeSettings()">Đóng</button>
   </div>
@@ -294,6 +332,60 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
   </div>
 </div>
 
+<!-- GIỚI THIỆU PHẦN MỀM -->
+<div class="modal-ov" id="gioithieu-ov" onclick="if(event.target===this) closeGioiThieu()">
+  <div class="settings-box" style="max-height:85vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <span style="font-size:26px">📇</span>
+      <div>
+        <div class="settings-title" style="margin-bottom:2px">Giới thiệu phần mềm</div>
+        <div style="font-size:11px;color:var(--g600)" id="gt-ver-line">Sổ Khách Hàng</div>
+      </div>
+    </div>
+
+    <div style="background:#f0fdf4;border-radius:12px;padding:12px;margin-bottom:10px;border-left:3px solid var(--gd)">
+      <div style="font-size:13px;font-weight:800;color:var(--gd);margin-bottom:6px">📌 Phần mềm này dùng để làm gì?</div>
+      <div style="font-size:12px;color:var(--g800);line-height:1.7">
+        <b>Sổ Khách Hàng</b> là app tra cứu miễn phí dành cho khách hàng của vựa thu mua mủ cao su — chỉ cần nhập <b>Mã khách hàng 5 số</b> do chủ vựa cung cấp là tự xem được toàn bộ sổ sách của chính mình, không cần lập tài khoản riêng, không cần chủ vựa thao tác hộ.
+      </div>
+    </div>
+
+    <div style="background:#eff6ff;border-radius:12px;padding:12px;margin-bottom:10px;border-left:3px solid #2563eb">
+      <div style="font-size:13px;font-weight:800;color:#1d4ed8;margin-bottom:6px">🧩 Xem được những gì?</div>
+      <div style="font-size:12px;color:var(--g800);line-height:1.7">
+        • <b>📥 Thu Mua</b> — lịch sử các lượt bán mủ cho vựa<br>
+        • <b>📒 Gửi sổ</b> — số tiền đang gửi lại chưa nhận<br>
+        • <b>💵 Ứng tiền</b> — số tiền đã ứng trước từ vựa<br>
+        • <b>⏱️ Chấm Công</b> — công/lương nếu có làm thêm cho vựa<br>
+        • Khung <b>📊 Tổng quan</b> gộp số liệu mọi loại sổ, tách rõ đã chốt/chưa chốt
+      </div>
+    </div>
+
+    <div style="background:#faf5ff;border-radius:12px;padding:12px;margin-bottom:10px;border-left:3px solid #9333ea">
+      <div style="font-size:13px;font-weight:800;color:#7e22ce;margin-bottom:6px">☁️ Dữ liệu luôn mới nhất</div>
+      <div style="font-size:12px;color:var(--g800);line-height:1.7">
+        App kết nối trực tiếp với sổ sách bên vựa qua đường truyền an toàn, tự làm mới ngầm mỗi 15 giây khi đang xem — không cần bấm tải lại, không lo xem nhầm số liệu cũ.
+      </div>
+    </div>
+
+    <div style="background:#fff7ed;border-radius:12px;padding:12px;margin-bottom:10px;border-left:3px solid #ea580c">
+      <div style="font-size:13px;font-weight:800;color:#c2410c;margin-bottom:6px">🔐 Riêng tư &amp; an toàn</div>
+      <div style="font-size:12px;color:var(--g800);line-height:1.7">
+        Mỗi mã khách hàng chỉ xem được đúng sổ của người đó. Có thể bật mật khẩu bảo vệ mục Cài đặt để tránh người khác lỡ tay đổi mã hoặc đăng xuất trên máy dùng chung.
+      </div>
+    </div>
+
+    <div style="background:#f5f3ff;border-radius:12px;padding:12px;margin-bottom:14px;border-left:3px solid #7c3aed">
+      <div style="font-size:13px;font-weight:800;color:#5b21b6;margin-bottom:6px">📞 Cần hỗ trợ?</div>
+      <div style="font-size:12px;color:var(--g800);line-height:1.7">
+        Nếu quên mã khách hàng, sai số liệu hoặc cần hỗ trợ khác, vui lòng liên hệ trực tiếp chủ vựa nơi bạn giao dịch để được cấp/kiểm tra lại thông tin.
+      </div>
+    </div>
+
+    <button class="btn btn-out" style="margin-top:0" onclick="closeGioiThieu()">Đã rõ</button>
+  </div>
+</div>
+
 <!-- POPUP MẬT KHẨU MỞ CÀI ĐẶT (tránh khách thoát/đổi nhầm) -->
 <div class="modal-ov" id="settings-pw-ov" onclick="if(event.target===this) closeSettingsPwPrompt()">
   <div class="settings-box">
@@ -311,6 +403,14 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
     <div class="settings-title">🕘 Các mã đã nhập</div>
     <div id="code-history-list" style="max-height:50vh;overflow-y:auto;margin-bottom:10px"></div>
     <button class="btn btn-plain" onclick="closeCodeHistory()">Đóng</button>
+  </div>
+</div>
+
+<!-- XEM ẢNH ĐÍNH KÈM GIAO DỊCH — PHÓNG TO TOÀN MÀN HÌNH -->
+<div class="modal-ov" id="anh-viewer-ov" onclick="if(event.target===this) closeAnhViewer()" style="z-index:2000;background:rgba(0,0,0,.92)">
+  <div style="max-width:96vw;text-align:center">
+    <img id="anh-viewer-img" style="max-width:94vw;max-height:78vh;border-radius:10px;display:block;margin:0 auto" onclick="event.stopPropagation()">
+    <button class="btn btn-out" style="margin-top:16px;background:rgba(255,255,255,.15);color:#fff;width:auto;padding:10px 26px" onclick="closeAnhViewer()">✕ Đóng</button>
   </div>
 </div>
 
@@ -342,6 +442,39 @@ var sbClient = null;
 var sbUser = null;
 var isAdminMode = false;
 var lastData = null; // cache dữ liệu vừa tải, dùng khi đổi người xem trong chế độ quản trị
+var _anhViewUrls = []; // danh sách URL ảnh đính kèm của lần render bảng Thu Mua/Bán gần nhất — xem xemAnhKH()
+function xemAnhKH(idx){
+  var url = _anhViewUrls[idx];
+  if (!url) return;
+  document.getElementById('anh-viewer-img').src = url;
+  document.getElementById('anh-viewer-ov').classList.add('show');
+}
+function closeAnhViewer(){ document.getElementById('anh-viewer-ov').classList.remove('show'); }
+var _lastRenderArgs = null; // {ten,id,data,isAdminCall} của lần render gần nhất, để lọc thời gian gọi lại render không cần tải lại dữ liệu
+var _custTickerTimer = null;
+var DATE_FILTER_KEY = 'xskh_date_filter';
+// Lọc thời gian có 3 lựa chọn: 'all' (Xem tất cả), 'fromToday' (Từ ngày...đến ngày hiện tại — đến ngày
+// LUÔN là hôm nay, tự trôi theo mỗi ngày), 'range' (Từ ngày... Đến ngày... cố định cả 2 mốc).
+// GHI NHỚ qua các lần tắt/mở app: CHỈ 'all' và 'fromToday' — vì 2 lựa chọn này luôn phản ánh dữ liệu
+// mới nhất (không có mốc "Đến ngày" cố định nào có thể bị lỗi thời). Lựa chọn 'range' (cố định cả 2
+// mốc) CHỦ Ý KHÔNG được lưu — tắt/mở lại app sẽ tự quay về lựa chọn 'all'/'fromToday' đã lưu gần nhất,
+// tránh trường hợp quên đang lọc 1 khoảng ngày cũ cố định rồi không thấy dữ liệu mới của ngày hôm sau.
+// Đổi sang mã khách hàng khác (kể cả nhập lại đúng mã cũ) LUÔN reset về 'all' — xem hàm _resetDateFilterToAll().
+var _dateFilterSaved = (function(){ try { return JSON.parse(localStorage.getItem(DATE_FILTER_KEY)) || {}; } catch(e){ return {}; } })();
+var _dateFilterMode = _dateFilterSaved.mode || 'all';    // 'all' | 'fromToday' | 'range'
+var _dateFilterFrom = _dateFilterSaved.from || '';
+var _dateFilterTo = _dateFilterSaved.to || '';
+var _dateFilterBounds = { min:'', max:'' }; // khoảng ngày sẵn có của khách hàng đang xem (tính lại mỗi lần render)
+function _saveDateFilter(){
+  if (_dateFilterMode === 'range') return; // 'range' không lưu, xem giải thích ở trên
+  try { localStorage.setItem(DATE_FILTER_KEY, JSON.stringify({ mode:_dateFilterMode, from:_dateFilterFrom })); } catch(e){}
+}
+// Gọi khi người dùng CHỦ ĐỘNG đổi sang xem 1 mã khách hàng khác (kể cả nhập lại đúng mã vừa xem) —
+// LUÔN đưa bộ lọc về "Xem tất cả", không áp dụng lại lựa chọn của lần xem trước.
+function _resetDateFilterToAll(){
+  _dateFilterMode = 'all'; _dateFilterFrom = ''; _dateFilterTo = '';
+  _saveDateFilter();
+}
 
 function toast(msg){
   var t = document.getElementById('toast');
@@ -433,6 +566,13 @@ function openHuongDan(){
   document.getElementById('huongdan-ov').classList.add('show');
 }
 function closeHuongDan(){ document.getElementById('huongdan-ov').classList.remove('show'); }
+function openGioiThieu(){
+  var verEl = document.getElementById('app-ver');
+  var gtVerEl = document.getElementById('gt-ver-line');
+  if (gtVerEl) gtVerEl.textContent = 'Sổ Khách Hàng ' + (verEl ? verEl.textContent : '');
+  document.getElementById('gioithieu-ov').classList.add('show');
+}
+function closeGioiThieu(){ document.getElementById('gioithieu-ov').classList.remove('show'); }
 function showSettingsMenu(){
   renderSettingsPwToggle();
   renderSettingsAccountLine();
@@ -615,6 +755,7 @@ function fetchAllData(cb, errCb){
       su: map['su_data'] || [],
       cc: map['cc_data'] || [],
       khIds: map['kh_ids'] || {},
+      khInfo: map['kh_info'] || {},
       adminPw: map['admin_pw'],
       thangPw: map['thang_pw'],
       muaChotMap: map['mua_chot_moc'] || {}
@@ -623,6 +764,7 @@ function fetchAllData(cb, errCb){
 }
 
 function traCuu(codeOverride){
+  var isManualLookup = (codeOverride == null); // true = người dùng vừa bấm tra cứu/chọn mã (kể cả từ lịch sử) — KHÁC với lần tự động resume mã đã lưu lúc mở app
   var idRaw = (codeOverride != null ? codeOverride : (document.getElementById('lookup-id').value || '')).trim();
   var errEl = document.getElementById('lookup-err');
   errEl.style.display = 'none';
@@ -651,6 +793,7 @@ function traCuu(codeOverride){
     isAdminMode = false;
     localStorage.setItem(CODE_KEY, idRaw);
     addCodeHistory(idUpper, ten);
+    if (isManualLookup) _resetDateFilterToAll(); // đổi/tra cứu lại mã (kể cả đúng mã cũ) → luôn về "Xem tất cả"
     document.getElementById('admin-header-card').style.display = 'none';
     document.getElementById('normal-header-card').style.display = '';
     document.getElementById('data-empty-hint').style.display = 'none';
@@ -689,12 +832,13 @@ function onAdminSelectChange(){
     return;
   }
   localStorage.setItem(ADMIN_SEL_KEY, ten);
+  _resetDateFilterToAll(); // admin chủ động đổi người xem (kể cả chọn lại đúng người cũ) → luôn về "Xem tất cả"
   document.getElementById('data-empty-hint').style.display = 'none';
   renderCustomerData(ten, null, lastData, true);
 }
 function showDataCards(show){
   if (!show) {
-    ['sum-card','card-primary','card-sg','card-su','card-cc'].forEach(function(id){
+    ['sum-card','card-primary','card-sg','card-su','card-cc','date-filter-card'].forEach(function(id){
       document.getElementById(id).style.display = 'none';
     });
   }
@@ -731,12 +875,66 @@ function rowsToTable(rows, cols, footLabel, footKey){
   return '<table>' + head + body + foot + '</table>';
 }
 
+// ── Khung cuốn chiếu thông tin liên hệ khách hàng (SĐT/CCCD/Địa chỉ nếu có), hiện ngay dưới khối tên +
+// mã khách hàng — cùng cơ chế với app Thu Mua: dòng tiêu đề trước, rồi cuốn từng thông tin mỗi 3 giây ──
+function updateCustTicker(ten, khInfo){
+  var wrap = document.getElementById('cust-info-ticker');
+  if (!wrap) return;
+  if (_custTickerTimer) { clearInterval(_custTickerTimer); _custTickerTimer = null; }
+  var info = (khInfo && khInfo[normTen(ten)]) || {};
+  var items = [];
+  if (info.sdt) items.push('📞 ' + info.sdt);
+  if (info.cccd) items.push('🪪 ' + info.cccd);
+  if (info.diaChi) items.push('📍 ' + info.diaChi);
+  if (!items.length) { wrap.style.display = 'none'; wrap.innerHTML = ''; return; }
+  items.unshift('Thông tin chi tiết của khách hàng');
+  wrap.style.display = 'flex';
+  wrap.innerHTML = '<span class="kh-ic">🏠</span><span class="kh-val" id="cust-info-val">' + items[0] + '</span>';
+  var idx = 0;
+  _custTickerTimer = setInterval(function(){
+    idx = (idx+1) % items.length;
+    var valEl = document.getElementById('cust-info-val');
+    if (!valEl) { clearInterval(_custTickerTimer); return; }
+    valEl.style.animation = 'none';
+    void valEl.offsetWidth; // reflow để animation chạy lại từ đầu mỗi lần đổi thông tin
+    valEl.textContent = items[idx];
+    valEl.style.animation = 'khTickerIn .35s ease';
+  }, 3000);
+}
+// ── Lọc theo thời gian (phía trên Lịch sử Thu Mua): "Xem tất cả" / "Từ ngày...đến ngày hiện tại" (Đến
+// ngày luôn tự trôi theo hôm nay) / "Từ ngày... Đến ngày..." (cố định cả 2 mốc, chỉ áp dụng trong phiên
+// hiện tại — xem ghi chú ở khai báo DATE_FILTER_KEY). Gọi lại renderCustomerData với dữ liệu đã có sẵn
+// trong bộ nhớ (không tải lại từ máy chủ), nên đổi lựa chọn lọc phản hồi tức thì. ──
+function onDateFilterModeChange(){
+  var mode = document.getElementById('date-filter-mode').value;
+  _dateFilterMode = mode;
+  if (mode === 'fromToday' || mode === 'range') {
+    // Bật lần đầu (chưa từng chọn ngày) → Từ ngày mặc định = giao dịch xa nhất đang có
+    if (!_dateFilterFrom) _dateFilterFrom = _dateFilterBounds.min;
+  }
+  if (mode === 'range' && !_dateFilterTo) {
+    // "Đến ngày" mặc định LUÔN là hôm nay (dù ngày đó chưa có ghi chép)
+    _dateFilterTo = ccISO(new Date());
+  }
+  _saveDateFilter();
+  if (_lastRenderArgs) renderCustomerData(_lastRenderArgs.ten, _lastRenderArgs.id, _lastRenderArgs.data, _lastRenderArgs.isAdminCall);
+}
+function onDateFilterChange(){
+  _dateFilterFrom = document.getElementById('date-filter-from').value || '';
+  if (_dateFilterMode === 'range') _dateFilterTo = document.getElementById('date-filter-to').value || '';
+  _saveDateFilter();
+  if (_lastRenderArgs) renderCustomerData(_lastRenderArgs.ten, _lastRenderArgs.id, _lastRenderArgs.data, _lastRenderArgs.isAdminCall);
+}
 function renderCustomerData(ten, id, data, isAdminCall){
   _lastDataUpdateAt = new Date();
   refreshConnStatus();
+  _lastRenderArgs = { ten:ten, id:id, data:data, isAdminCall:isAdminCall }; // để hàm lọc thời gian gọi lại render mà không cần tải lại dữ liệu
   if (!isAdminCall) {
     document.getElementById('data-ten').textContent = '👤 ' + ten;
     document.getElementById('data-id').textContent = id;
+    updateCustTicker(ten, data.khInfo||{});
+  } else {
+    document.getElementById('cust-info-ticker').style.display = 'none';
   }
 
   var muaChotDate = getMuaChotMocFor(data.muaChotMap||{}, ten); // chuỗi 'yyyy-mm-dd' đã chốt đến hết ngày này, hoặc '' nếu chưa chốt
@@ -756,12 +954,55 @@ function renderCustomerData(ten, id, data, isAdminCall){
   // Tự động phát hiện vai trò: có Bán mà không có Thu Mua -> đây là NGƯỜI MUA (đầu mối mua lại hàng)
   var isBuyer = (muaAll.length === 0 && ban.length > 0);
 
+  // ── Khối "🗓 Lọc theo thời gian": tính khoảng ngày sẵn có (trước khi lọc) để làm mặc định khi bật
+  // chế độ có chọn ngày — Từ ngày mặc định = giao dịch xa nhất đang có ──
+  document.getElementById('date-filter-card').style.display = isCongNhanOnly ? 'none' : '';
+  var boundRows = (isBuyer ? ban : mua).concat(sg, su);
+  _dateFilterBounds = { min:'', max:'' };
+  boundRows.forEach(function(r){
+    if (!r.date) return;
+    if (!_dateFilterBounds.min || r.date < _dateFilterBounds.min) _dateFilterBounds.min = r.date;
+    if (!_dateFilterBounds.max || r.date > _dateFilterBounds.max) _dateFilterBounds.max = r.date;
+  });
+  if (_dateFilterMode === 'fromToday' || _dateFilterMode === 'range') {
+    if (!_dateFilterFrom) _dateFilterFrom = _dateFilterBounds.min;
+  }
+  if (_dateFilterMode === 'range' && !_dateFilterTo) {
+    _dateFilterTo = ccISO(new Date()); // luôn mặc định ngày hôm nay, kể cả khi ngày đó chưa có ghi chép
+  }
+  var todayStr = ccISO(new Date());
+  document.getElementById('date-filter-mode').value = _dateFilterMode;
+  document.getElementById('date-range-box').style.display = (_dateFilterMode === 'all') ? 'none' : 'flex';
+  document.getElementById('date-filter-to-box').style.display = (_dateFilterMode === 'range') ? '' : 'none';
+  document.getElementById('date-filter-today-hint').style.display = (_dateFilterMode === 'fromToday') ? '' : 'none';
+  document.getElementById('date-filter-from').value = _dateFilterFrom;
+  document.getElementById('date-filter-to').value = (_dateFilterMode === 'range') ? _dateFilterTo : todayStr;
+  function applyDateFilter(rows){
+    if (_dateFilterMode === 'all') return rows;
+    var to = (_dateFilterMode === 'fromToday') ? todayStr : _dateFilterTo; // "fromToday": đến ngày LUÔN là hôm nay, tự trôi theo mỗi lần render
+    return rows.filter(function(r){
+      if (!r.date) return false;
+      if (_dateFilterFrom && r.date < _dateFilterFrom) return false;
+      if (to && r.date > to) return false;
+      return true;
+    });
+  }
+
+  // Danh sách URL ảnh đính kèm của lần render này — dùng chỉ số (idx) thay vì nhét thẳng URL vào
+  // onclick để tránh lỗi escape khi URL có ký tự đặc biệt.
+  _anhViewUrls = [];
   var colsGD = [
     {label:'Ngày', fmt:function(r){ return fmtDateSmart(r.date); }},
     {label:'KG', key:'kg'},
     {label:'Độ/Loại', fmt:fmtDoOrLoai},
     {label:'Giá', fmt:function(r){ return fmtVND(r.gia); }},
-    {label:'Thành tiền', fmt:function(r){ return fmtVND(r.tt)+'đ'; }, isSum:true}
+    {label:'Thành tiền', fmt:function(r){ return fmtVND(r.tt)+'đ'; }, isSum:true},
+    {label:'📷', fmt:function(r){
+      if (!r.anh) return '';
+      var idx = _anhViewUrls.length;
+      _anhViewUrls.push(r.anh);
+      return '<span onclick="xemAnhKH('+idx+')" style="cursor:pointer;font-size:14px" title="Xem ảnh đính kèm">📷</span>';
+    }}
   ];
   var colsSG = [
     {label:'Ngày', fmt:function(r){ return fmtDateSmart(r.date); }},
@@ -778,7 +1019,9 @@ function renderCustomerData(ten, id, data, isAdminCall){
   ];
 
   // ── LỊCH SỬ CHÍNH: Thu Mua (người bán) hoặc Bán — đổi tên cho phù hợp góc nhìn người mua lại hàng ──
-  var primaryRows = isBuyer ? ban : mua;
+  // (áp dụng bộ lọc thời gian nếu đang bật "Xem theo khoảng thời gian")
+  var primaryRowsAll = isBuyer ? ban : mua;
+  var primaryRows = applyDateFilter(primaryRowsAll);
   var primaryLabel = isBuyer ? '🚛 Lịch sử mua hàng từ vựa' : '📥 Lịch sử Thu Mua';
   var primaryTotal = primaryRows.reduce(function(s,x){ return s + (x.tt||0); }, 0);
   document.getElementById('primary-title').innerHTML = primaryLabel + ' (<span id="cnt-primary">' + primaryRows.length + '</span>)';
@@ -792,35 +1035,37 @@ function renderCustomerData(ten, id, data, isAdminCall){
   document.getElementById('tbl-primary').innerHTML = rowsToTable(primaryRows, colsGD, 'Tổng cộng', 'tt');
   document.getElementById('card-primary').style.display = isCongNhanOnly ? 'none' : '';
 
-  // ── TỔNG QUAN: chi tiết đầy đủ hơn — tổng + số lượt + tách đã chốt/chưa chốt ──
-  var tongSgAll = sg.reduce(function(s,x){ return s + (x.tt||0); }, 0);
-  var tongSgChot = sg.filter(function(r){ return r.chot; }).reduce(function(s,x){ return s + (x.tt||0); }, 0);
-  var tongSuAll = su.reduce(function(s,x){ return s + (x.tien||0); }, 0);
-  var tongSuChot = su.filter(function(r){ return r.chot; }).reduce(function(s,x){ return s + (x.tien||0); }, 0);
+  // ── TỔNG QUAN: chi tiết đầy đủ hơn — tổng + số lượt + tách đã chốt/chưa chốt (đã áp dụng lọc thời gian) ──
+  var sgF = applyDateFilter(sg), suF = applyDateFilter(su);
+  var tongSgAll = sgF.reduce(function(s,x){ return s + (x.tt||0); }, 0);
+  var tongSgChot = sgF.filter(function(r){ return r.chot; }).reduce(function(s,x){ return s + (x.tt||0); }, 0);
+  var tongSuAll = suF.reduce(function(s,x){ return s + (x.tien||0); }, 0);
+  var tongSuChot = suF.filter(function(r){ return r.chot; }).reduce(function(s,x){ return s + (x.tien||0); }, 0);
   var sumHtml = '<div class="sum-box"><div class="sum-lbl">' + (isBuyer ? '🚛 Tổng đã mua' : '📥 Tổng Thu Mua') + '</div><div class="sum-val" style="color:var(--gd)">' + fmtVND(primaryTotal) + 'đ</div>'
     + '<div class="sum-sub">' + primaryRows.length + ' lượt giao dịch' + (muaSoAn > 0 ? ', ' + muaSoAn + ' lượt đã ẩn (đã chốt)' : '') + '</div></div>';
   if (sg.length > 0) {
-    sumHtml += '<div class="sum-box"><div class="sum-lbl">📒 Gửi sổ — Tổng cộng</div><div class="sum-val" style="color:var(--gold)">' + fmtVND(tongSgAll) + 'đ</div><div class="sum-sub">' + sg.length + ' lượt giao dịch</div></div>';
+    sumHtml += '<div class="sum-box"><div class="sum-lbl">📒 Gửi sổ — Tổng cộng</div><div class="sum-val" style="color:var(--gold)">' + fmtVND(tongSgAll) + 'đ</div><div class="sum-sub">' + sgF.length + ' lượt giao dịch</div></div>';
     if (tongSgChot > 0) sumHtml += '<div class="sum-box"><div class="sum-lbl">📒 Gửi sổ — Đã chốt</div><div class="sum-val" style="color:var(--g600)">' + fmtVND(tongSgChot) + 'đ</div></div>';
   }
   if (su.length > 0) {
-    sumHtml += '<div class="sum-box"><div class="sum-lbl">💵 Ứng tiền — Tổng cộng</div><div class="sum-val" style="color:var(--red)">' + fmtVND(tongSuAll) + 'đ</div><div class="sum-sub">' + su.length + ' lượt giao dịch</div></div>';
+    sumHtml += '<div class="sum-box"><div class="sum-lbl">💵 Ứng tiền — Tổng cộng</div><div class="sum-val" style="color:var(--red)">' + fmtVND(tongSuAll) + 'đ</div><div class="sum-sub">' + suF.length + ' lượt giao dịch</div></div>';
     if (tongSuChot > 0) sumHtml += '<div class="sum-box"><div class="sum-lbl">💵 Ứng tiền — Đã chốt</div><div class="sum-val" style="color:var(--g600)">' + fmtVND(tongSuChot) + 'đ</div></div>';
   }
   if (cc.length > 0) sumHtml += '<div class="sum-box"><div class="sum-lbl">⏱️ Sổ Chấm Công</div><div class="sum-val" style="color:var(--g600)">' + cc.length + ' kỳ chấm công</div></div>';
   document.getElementById('sum-grid').innerHTML = sumHtml;
   document.getElementById('sum-card').style.display = isCongNhanOnly ? 'none' : '';
 
-  // ── Gửi sổ / Ứng tiền: chỉ hiện khi thực sự có dữ liệu (tối ưu, đỡ rối cho người mua lại hàng) ──
+  // ── Gửi sổ / Ứng tiền: THẺ hiện/ẩn theo có dữ liệu hay không nói chung (không phụ thuộc lọc thời
+  // gian, tránh cả khối biến mất gây hiểu nhầm khi chọn khoảng ngày hẹp) — bảng bên trong áp dụng lọc ──
   document.getElementById('card-sg').style.display = sg.length > 0 ? '' : 'none';
   if (sg.length > 0) {
-    document.getElementById('cnt-sg').textContent = sg.length;
-    document.getElementById('tbl-sg').innerHTML = rowsToTable(sg, colsSG, 'Tổng cộng', 'tt');
+    document.getElementById('cnt-sg').textContent = sgF.length;
+    document.getElementById('tbl-sg').innerHTML = rowsToTable(sgF, colsSG, 'Tổng cộng', 'tt');
   }
   document.getElementById('card-su').style.display = su.length > 0 ? '' : 'none';
   if (su.length > 0) {
-    document.getElementById('cnt-su').textContent = su.length;
-    document.getElementById('tbl-su').innerHTML = rowsToTable(su, colsSU, 'Tổng cộng', 'tien');
+    document.getElementById('cnt-su').textContent = suF.length;
+    document.getElementById('tbl-su').innerHTML = rowsToTable(suF, colsSU, 'Tổng cộng', 'tien');
   }
 
   // ── Chấm Công (chỉ hiện nếu người này có trong sổ Chấm Công) ──

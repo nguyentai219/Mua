@@ -1,7 +1,8 @@
 {
-  "name": "Sổ Khách Hàng v1.28 - Mua Bán Mủ Cao Su",
+  "id": "./",
+  "name": "Sổ Khách Hàng",
   "short_name": "Sổ Khách Hàng",
-  "description": "Tra cứu sổ Thu Mua, Gửi sổ, Ứng tiền của riêng bạn bằng Mã khách hàng - dành cho người bán mủ - v1.28",
+  "description": "Tra cứu sổ Thu Mua, Gửi sổ, Ứng tiền của riêng bạn bằng Mã khách hàng - dành cho người bán mủ",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

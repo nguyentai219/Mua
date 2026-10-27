@@ -1,4 +1,4 @@
-# Sổ Khách Hàng (v1.29)
+# Sổ Khách Hàng (v1.30)
 
 Ứng dụng đồng hành ("máy khách") của app **Mua Bán Mủ Cao Su**. Cài trên điện thoại của khách hàng bán mủ, cho phép họ tự tra cứu sổ **Thu Mua / Gửi sổ / Ứng tiền** của riêng mình — không xem được dữ liệu của khách hàng khác, và không xem được **Bán** (giao dịch bán cho vựa lớn, không liên quan tới khách hàng cá nhân).
 
@@ -29,6 +29,7 @@ nguyentai219.github.io/XemSoKhachHang/
 
 | Phiên bản | Ngày | Thay đổi |
 |---|---|---|
+| **v1.30** | 2026-10-27 | 🔒 **Tách dữ liệu khỏi các app khác cùng tên miền**: Service Worker chỉ xoá cache `xem-so-kh-` của chính app (trước đây xoá hết, làm mất bản offline của Mủ Cao Su, Quản Lý Heo...); phiên đăng nhập Supabase lưu ở khoá riêng `xskh-sb-auth` (trước đây dùng chung với app Mủ Cao Su và Khai Thuế nên đăng xuất ở 1 app là văng cả app kia). Cần đăng nhập lại 1 lần |
 | **v1.29** | 2026-09-16 | 🔧 **Khắc phục popup "Xem lại bản cập nhật biểu tượng"** (cùng nguyên nhân đã fix ở app chính v2.4.1): thêm `"id": "./"` vào `manifest.json` để Chrome 144+ nhận diện đúng app đã cài và không tải icon về so sánh pixel nữa. Đồng thời bỏ số phiên bản ra khỏi `name` và `description` trong manifest (trước đây ghi `"name": "Sổ Khách Hàng v1.28 - Mua Bán Mủ Cao Su"` và `"description": "... v1.28"` — đây là nguyên nhân khiến Chrome coi manifest thay đổi mỗi lần cập nhật app, góp phần kích hoạt popup). Từ bản này manifest ổn định hoàn toàn, không cần đụng đến khi bump version |
 | **v1.28** | 2026-07 | Sửa icon 📷 (xem ảnh đính kèm) bị **khuất phía sau, khó thấy** trên màn hình điện thoại — trước đây icon nằm ở cột riêng cuối cùng của bảng nên bị đẩy ra ngoài vùng nhìn thấy khi bảng cuộn ngang; nay icon 📷 gắn liền ngay sau cột **Ngày** (cột đầu tiên, luôn hiển thị không cần cuộn), giống cách hiển thị bên app máy chủ |
 | **v1.27** | 2026-07 | Hiện được **ảnh đính kèm giao dịch** (tính năng mới từ v1.6.0 bên app máy chủ "Mua Bán Mủ Cao Su") — bảng Lịch sử Thu Mua/Bán nay có thêm cột 📷: dòng giao dịch nào có ảnh đính kèm sẽ hiện icon 📷, chạm vào để xem ảnh phóng to toàn màn hình. Chỉ hiển thị, không có chức năng chụp/tải ảnh lên (chức năng đó chỉ có ở app máy chủ) |

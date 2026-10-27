@@ -1,4 +1,4 @@
-const CACHE = 'xem-so-kh-v1.29';
+const CACHE = 'xem-so-kh-v1.30';
 // Dùng scope của chính service worker để tự suy ra đường dẫn — không phụ thuộc tên thư mục deploy cụ thể
 const BASE = self.registration.scope; // VD: https://nguyentai219.github.io/XemSoKhachHang/
 const FILES = [
@@ -16,10 +16,12 @@ self.addEventListener('install', e => {
   self.skipWaiting();
 });
 
+// Chỉ xoá cache CŨ CỦA APP NÀY (tiền tố riêng) — bộ nhớ cache dùng chung cả tên miền
+// nguyentai219.github.io, xoá hết sẽ làm mất bản offline của các app khác (Mủ Cao Su, Quản Lý Heo...).
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(ks =>
-      Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))
+      Promise.all(ks.filter(k => (k.startsWith('xem-so-kh-')) && k !== CACHE).map(k => caches.delete(k)))
     )
   );
   self.clients.claim();

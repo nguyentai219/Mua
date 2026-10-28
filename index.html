@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<title>Sổ Khách Hàng v1.33</title>
+<title>Sổ Khách Hàng v1.34</title>
 <meta name="theme-color" content="#1a472a">
 <meta name="format-detection" content="telephone=no,email=no,address=no">
 <meta name="mobile-web-app-capable" content="yes">
@@ -118,7 +118,7 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
     <div class="header-brand">
       <img src="icon-192.png" alt="Logo" class="header-icon">
       <div class="header-text">
-        <div class="header-title">Sổ Khách Hàng <span class="header-ver" id="app-ver">v1.33</span></div>
+        <div class="header-title" onclick="_chamTieuDe()">Sổ Khách Hàng <span class="header-ver" id="app-ver">v1.34</span></div>
         <div class="header-sub" id="header-sub">Mua Bán Mủ Cao Su — dành cho người bán tra cứu sổ sách của mình</div>
       </div>
     </div>
@@ -141,7 +141,7 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
       <input type="text" inputmode="numeric" id="lookup-mk" class="fi fi-id an-chu" placeholder="••••••" maxlength="40" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" onkeydown="if(event.key==='Enter')traCuu()">
       <div class="err" id="lookup-err"></div>
       <button class="btn btn-main" id="btn-lookup" onclick="traCuu()">🔍 Xem sổ của tôi</button>
-      <button type="button" id="btn-admin-mode" onclick="doiCheDoNhap()" style="display:block;margin:12px auto 0;background:none;border:none;color:var(--g600);font-family:'Be Vietnam Pro',sans-serif;font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline">🔑 Chủ vựa đăng nhập quản trị</button>
+      <button type="button" id="btn-admin-mode" onclick="doiCheDoNhap()" style="display:none;margin:12px auto 0;background:none;border:none;color:var(--g600);font-family:'Be Vietnam Pro',sans-serif;font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline">🔑 Chủ vựa đăng nhập quản trị</button>
     </div>
   </div>
 
@@ -304,13 +304,6 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
       <div style="font-size:12px;color:var(--g800);line-height:1.7">
         • <b>🔍 Tra cứu mã khác / Thoát</b>: thoát sổ đang xem (xoá mã + mật khẩu đã nhớ trên máy) để nhập mã khác<br>
         • <b>🔒 Hỏi mật khẩu khi mở Cài đặt</b>: bật thì mỗi lần vào Cài đặt phải nhập lại Mật khẩu xem sổ — mặc định TẮT, bật lên nếu máy dùng chung với người khác
-      </div>
-    </div>
-
-    <div style="background:#fef3c7;border-radius:12px;padding:12px;margin-bottom:14px;border-left:3px solid #d97706">
-      <div style="font-size:13px;font-weight:800;color:#92400e;margin-bottom:6px">🔑 Chế độ quản trị (dành cho chủ vựa)</div>
-      <div style="font-size:12px;color:var(--g800);line-height:1.7">
-        Nhấn <b>🔑 Chủ vựa đăng nhập quản trị</b> ở màn nhập mã, nhập <b>email tài khoản Supabase</b> của vựa và <b>mật khẩu quản trị</b> (của app Mua Bán Mủ Cao Su) → chọn xem sổ của <b>từng khách</b> hoặc <b>tất cả khách</b>
       </div>
     </div>
 
@@ -681,8 +674,21 @@ function datCheDoNhap(admin){
   document.getElementById('lookup-hint').innerHTML = admin
     ? '🔑 <b>Chế độ quản trị</b>: nhập email tài khoản Supabase của vựa và mật khẩu quản trị của app Mua Bán Mủ Cao Su để xem sổ của mọi khách hàng.'
     : 'Chào người bán! Nhập <b>Mã khách hàng</b> và <b>Mật khẩu xem sổ</b> mà chủ vựa đã cung cấp để xem sổ Thu Mua, Gửi sổ và Ứng tiền của mình.';
-  document.getElementById('btn-admin-mode').textContent = admin ? '👤 Khách hàng xem sổ' : '🔑 Chủ vựa đăng nhập quản trị';
+  var nutQT = document.getElementById('btn-admin-mode');
+  nutQT.textContent = '👤 Khách hàng xem sổ';
+  nutQT.style.display = admin ? 'block' : 'none';
+  // Ô email: bỏ kiểu chữ to/in hoa/giãn chữ của ô Mã KH
+  id.classList.toggle('fi-id', !admin);
   document.getElementById('btn-code-history').style.visibility = admin ? 'hidden' : '';
+}
+// Lối vào chế độ quản trị được GIẤU khỏi khách hàng: chỉ chủ vựa biết — chạm 5 lần liên tiếp (trong 3 giây)
+// vào chữ "Sổ Khách Hàng" ở đầu trang, khi đang ở màn nhập mã.
+var _soLanCham = 0, _henCham = null;
+function _chamTieuDe(){
+  if (!document.getElementById('scr-lookup').classList.contains('active')) return;
+  _soLanCham++;
+  clearTimeout(_henCham); _henCham = setTimeout(function(){ _soLanCham = 0; }, 3000);
+  if (_soLanCham >= 5) { _soLanCham = 0; doiCheDoNhap(); }
 }
 function doiCheDoNhap(){
   datCheDoNhap(!_cheDoAdminNhap);

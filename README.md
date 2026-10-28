@@ -20,6 +20,17 @@ Chạy file `supabase-so-khach-hang.sql` trong Supabase → SQL Editor. Tạo 2 
 - Mật khẩu xem sổ lưu trong dữ liệu riêng của chủ vựa (khoá `kh_pw`, chỉ chủ vựa đọc được). Khách làm lộ/quên → chủ vựa bấm 🔄 Đổi.
 - **Mật khẩu quản trị mặc định của app chính là 28082008 và giống nhau ở mọi vựa** — chủ vựa nên đổi mật khẩu quản trị, vì ai biết email vựa + mật khẩu quản trị đều xem được toàn bộ sổ.
 
+## App Android (APK)
+
+- Tải: **https://nguyentai219.github.io/Mua/android-twa/release/SoKhachHang.apk** (gửi link hoặc file cho khách cài).
+- APK dạng Trusted Web Activity: chỉ mở `https://nguyentai219.github.io/Mua/` trong Chrome ở chế độ toàn màn hình
+  (không thanh địa chỉ nhờ `assetlinks.json` ở repo `nguyentai219.github.io`). Vì vậy **app tự cập nhật** mỗi khi
+  web được cập nhật — không cần cài lại APK.
+- Chạy được khi **không có mạng** sau lần mở đầu tiên (Service Worker lưu sẵn trang); xem sổ vẫn cần mạng để lấy
+  số liệu mới nhất.
+- Mã nguồn: `android-twa/` (build bằng `android-twa/build.sh`, ký bằng **cùng khoá** với APK Mủ Cao Su — người dùng giữ,
+  không đưa vào repo). Chỉ build lại khi đổi tên/biểu tượng/màu app Android (tăng `versionCode`).
+
 ## Triển khai
 
 Upload các file trong thư mục này lên GitHub Pages tại đường dẫn:

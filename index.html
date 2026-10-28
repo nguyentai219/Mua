@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<title>Sổ Khách Hàng v1.31</title>
+<title>Sổ Khách Hàng v1.32</title>
 <meta name="theme-color" content="#1a472a">
 <meta name="format-detection" content="telephone=no,email=no,address=no">
 <meta name="mobile-web-app-capable" content="yes">
@@ -108,6 +108,7 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
 /* ── Khối lọc thời gian xem, đặt giữa khối tên khách hàng và lịch sử thu mua ── */
 .date-filter-box{display:flex;gap:8px;margin-top:10px}
 .date-filter-box > div{flex:1}
+  .an-chu{-webkit-text-security:disc;text-security:disc}
 </style>
 </head>
 <body>
@@ -117,7 +118,7 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
     <div class="header-brand">
       <img src="icon-192.png" alt="Logo" class="header-icon">
       <div class="header-text">
-        <div class="header-title">Sổ Khách Hàng <span class="header-ver" id="app-ver">v1.31</span></div>
+        <div class="header-title">Sổ Khách Hàng <span class="header-ver" id="app-ver">v1.32</span></div>
         <div class="header-sub" id="header-sub">Mua Bán Mủ Cao Su — dành cho người bán tra cứu sổ sách của mình</div>
       </div>
     </div>
@@ -127,30 +128,20 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
 
 <div class="page">
 
-  <!-- MÀN ĐĂNG NHẬP TÀI KHOẢN ĐỒNG BỘ (chỉ cần làm 1 lần trên máy) -->
-  <div class="screen" id="scr-login">
-    <div class="card">
-      <div class="hint">📌 Ứng dụng dành cho <b>người bán mủ</b> tra cứu sổ sách của mình. Bước đăng nhập này chỉ cần làm <b>1 lần duy nhất</b> trên máy này — liên hệ chủ vựa để lấy tài khoản đăng nhập (email/mật khẩu) nếu chưa có.</div>
-      <label class="fl">Email tài khoản</label>
-      <input type="email" id="login-email" class="fi" placeholder="email@vidu.com" autocomplete="username">
-      <label class="fl">Mật khẩu</label>
-      <input type="password" id="login-pass" class="fi" placeholder="••••••••" autocomplete="current-password">
-      <div class="err" id="login-err"></div>
-      <button class="btn btn-main" id="btn-login" onclick="doLogin()">Đăng nhập</button>
-    </div>
-  </div>
-
   <!-- MÀN NHẬP MÃ KHÁCH HÀNG -->
   <div class="screen" id="scr-lookup">
     <div class="card">
-      <div class="hint">Chào người bán! Nhập <b>Mã khách hàng</b> mà chủ vựa đã cung cấp cho bạn để xem sổ Thu Mua, Gửi sổ và Ứng tiền của mình.</div>
+      <div class="hint" id="lookup-hint">Chào người bán! Nhập <b>Mã khách hàng</b> và <b>Mật khẩu xem sổ</b> mà chủ vựa đã cung cấp để xem sổ Thu Mua, Gửi sổ và Ứng tiền của mình.</div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <label class="fl" style="margin-bottom:0">Mã khách hàng</label>
+        <label class="fl" style="margin-bottom:0" id="lookup-id-lbl">Mã khách hàng</label>
         <button type="button" id="btn-code-history" onclick="openCodeHistory()" style="display:none;background:none;border:none;color:var(--gd);font-family:'Be Vietnam Pro',sans-serif;font-size:12px;font-weight:700;cursor:pointer;padding:2px 0">🕘 Các mã đã nhập</button>
       </div>
-      <input type="text" inputmode="numeric" pattern="[0-9]*" id="lookup-id" class="fi fi-id" placeholder="12345" maxlength="20" autocomplete="off" onkeydown="if(event.key==='Enter')traCuu()">
+      <input type="text" inputmode="numeric" pattern="[0-9]*" id="lookup-id" class="fi fi-id" placeholder="12345" maxlength="60" autocomplete="off" onkeydown="if(event.key==='Enter')document.getElementById('lookup-mk').focus()">
+      <label class="fl" id="lookup-mk-lbl">Mật khẩu xem sổ</label>
+      <input type="text" inputmode="numeric" id="lookup-mk" class="fi fi-id an-chu" placeholder="••••••" maxlength="40" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" onkeydown="if(event.key==='Enter')traCuu()">
       <div class="err" id="lookup-err"></div>
       <button class="btn btn-main" id="btn-lookup" onclick="traCuu()">🔍 Xem sổ của tôi</button>
+      <button type="button" id="btn-admin-mode" onclick="doiCheDoNhap()" style="display:block;margin:12px auto 0;background:none;border:none;color:var(--g600);font-family:'Be Vietnam Pro',sans-serif;font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline">🔑 Chủ vựa đăng nhập quản trị</button>
     </div>
   </div>
 
@@ -170,7 +161,7 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
       <div class="sec-card-title">🔑 Chế độ quản trị</div>
       <div class="sec-card-body">
         <div class="admin-tag" style="margin-bottom:10px">Xem được mọi người bán</div>
-        <label class="fl">Chọn người bán cần xem</label>
+        <label class="fl">Chọn khách cần xem (hoặc tất cả)</label>
         <select id="admin-select" class="fi" onchange="onAdminSelectChange()" style="margin-bottom:0"></select>
       </div>
     </div>
@@ -239,12 +230,8 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
   <div class="settings-box">
     <div class="settings-title">⚙️ Cài đặt</div>
 
-    <button class="btn btn-out" style="margin-top:0" id="btn-switch-code" onclick="onSwitchCode()">🔍 Tra cứu mã khác</button>
-
-    <div style="margin-top:10px;padding-top:12px;border-top:1px solid var(--g100)">
-      <div style="font-size:11.5px;color:var(--g600);margin-bottom:8px" id="settings-account-line">👤 Đã đăng nhập: —</div>
-      <button class="btn btn-out" style="margin-top:0" onclick="doLogout()">🚪 Đăng xuất tài khoản đồng bộ</button>
-    </div>
+    <div style="font-size:11.5px;color:var(--g600);margin-bottom:8px" id="settings-account-line">👤 Đang xem: —</div>
+    <button class="btn btn-out" style="margin-top:0" id="btn-switch-code" onclick="onSwitchCode()">🔍 Tra cứu mã khác / Thoát</button>
 
     <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 2px;margin-top:6px;border-top:1px solid var(--g100)">
       <div style="font-size:13px;color:var(--g600);font-weight:700;padding-right:10px">🔒 Hỏi mật khẩu khi mở Cài đặt</div>
@@ -275,17 +262,18 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
     </div>
 
     <div style="background:#f0fdf4;border-radius:12px;padding:12px;margin-bottom:10px;border-left:3px solid var(--gd)">
-      <div style="font-size:13px;font-weight:800;color:var(--gd);margin-bottom:6px">1️⃣ Đăng nhập lần đầu</div>
+      <div style="font-size:13px;font-weight:800;color:var(--gd);margin-bottom:6px">1️⃣ Mã khách hàng + Mật khẩu xem sổ</div>
       <div style="font-size:12px;color:var(--g800);line-height:1.7">
-        • Chỉ cần làm 1 lần trên máy — nhập đúng tài khoản đồng bộ (email + mật khẩu) do chủ vựa cung cấp<br>
-        • Lần sau mở app sẽ vào thẳng, không cần đăng nhập lại
+        • Chủ vựa đưa cho bạn <b>Mã khách hàng</b> (5 số) và <b>Mật khẩu xem sổ</b> (6 số) — không cần tài khoản hay email nào khác<br>
+        • Nhập đúng 1 lần, lần sau mở app sẽ vào thẳng sổ của bạn<br>
+        • Nhập sai 5 lần liên tiếp thì mã bị khoá tạm 15 phút. Quên mật khẩu → hỏi chủ vựa cấp mật khẩu mới
       </div>
     </div>
 
     <div style="background:#eff6ff;border-radius:12px;padding:12px;margin-bottom:10px;border-left:3px solid #2563eb">
       <div style="font-size:13px;font-weight:800;color:#1d4ed8;margin-bottom:6px">2️⃣ Nhập Mã khách hàng</div>
       <div style="font-size:12px;color:var(--g800);line-height:1.7">
-        • Nhập đúng <b>5 chữ số</b> chủ vựa đưa cho bạn, rồi nhấn <b>🔍 Xem sổ của tôi</b><br>
+        • Nhập Mã khách hàng và Mật khẩu xem sổ, rồi nhấn <b>🔍 Xem sổ của tôi</b><br>
         • Mã đã tra đúng sẽ tự nhớ — lần sau mở app hiện thẳng sổ luôn, không cần nhập lại<br>
         • Nhấn <b>🕘 Các mã đã nhập</b> cạnh ô nhập để chọn nhanh lại mã đã tra trước đó trên máy này (không cần gõ lại)
       </div>
@@ -306,7 +294,7 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
       <div style="font-size:12px;color:var(--g800);line-height:1.7">
         Dòng chữ ngay dưới tên app cho biết:<br>
         • <b style="color:#16a34a">✅ Đã kết nối - cập nhật lúc:...</b> — sổ đang hiện đúng dữ liệu mới nhất<br>
-        • <b style="color:#ca8a04">⚠️ Chưa kết nối</b> — chưa đăng nhập xong hoặc đang chờ kết nối<br>
+        • <b style="color:#ca8a04">⚠️ Chưa kết nối</b> — chưa nhập mã hoặc đang chờ kết nối<br>
         • <b style="color:#dc2626">❌ Lỗi kết nối</b> — máy đang mất mạng, kết nối lại mạng để xem tiếp
       </div>
     </div>
@@ -314,17 +302,15 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
     <div style="background:#fff7ed;border-radius:12px;padding:12px;margin-bottom:10px;border-left:3px solid #ea580c">
       <div style="font-size:13px;font-weight:800;color:#c2410c;margin-bottom:6px">⚙️ Cài đặt</div>
       <div style="font-size:12px;color:var(--g800);line-height:1.7">
-        • <b>🔍 Tra cứu mã khác</b>: thoát sổ đang xem để nhập mã khách hàng khác<br>
-        • <b>👤 Đã đăng nhập</b>: hiện tài khoản đồng bộ đang dùng trên máy này<br>
-        • <b>🚪 Đăng xuất tài khoản đồng bộ</b>: chỉ dùng khi đổi sang tài khoản đồng bộ khác — sau khi đăng xuất phải đăng nhập lại như lần đầu<br>
-        • <b>🔒 Hỏi mật khẩu khi mở Cài đặt</b>: bật/tắt việc phải nhập mật khẩu giao dịch mỗi lần vào Cài đặt — mặc định BẬT, tắt đi nếu máy chỉ 1 mình bạn dùng
+        • <b>🔍 Tra cứu mã khác / Thoát</b>: thoát sổ đang xem (xoá mã + mật khẩu đã nhớ trên máy) để nhập mã khác<br>
+        • <b>🔒 Hỏi mật khẩu khi mở Cài đặt</b>: bật thì mỗi lần vào Cài đặt phải nhập lại Mật khẩu xem sổ — mặc định TẮT, bật lên nếu máy dùng chung với người khác
       </div>
     </div>
 
     <div style="background:#fef3c7;border-radius:12px;padding:12px;margin-bottom:14px;border-left:3px solid #d97706">
       <div style="font-size:13px;font-weight:800;color:#92400e;margin-bottom:6px">🔑 Chế độ quản trị (dành cho chủ vựa)</div>
       <div style="font-size:12px;color:var(--g800);line-height:1.7">
-        Nhập đúng mã quản trị (khác với Mã khách hàng 5 số) vào ô nhập mã sẽ mở được danh sách chọn xem sổ của <b>bất kỳ khách hàng nào</b>, dùng khi cần kiểm tra hộ hoặc hỗ trợ khách
+        Nhấn <b>🔑 Chủ vựa đăng nhập quản trị</b> ở màn nhập mã, nhập <b>email tài khoản Supabase</b> của vựa và <b>mật khẩu quản trị</b> (của app Mua Bán Mủ Cao Su) → chọn xem sổ của <b>từng khách</b> hoặc <b>tất cả khách</b>
       </div>
     </div>
 
@@ -389,8 +375,8 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
 <!-- POPUP MẬT KHẨU MỞ CÀI ĐẶT (tránh khách thoát/đổi nhầm) -->
 <div class="modal-ov" id="settings-pw-ov" onclick="if(event.target===this) closeSettingsPwPrompt()">
   <div class="settings-box">
-    <div class="settings-title">🔒 Nhập mật khẩu giao dịch</div>
-    <input type="password" id="settings-pw-input" class="fi" placeholder="Mật khẩu giao dịch..." autocomplete="new-password" onkeydown="if(event.key==='Enter') confirmSettingsPw()">
+    <div class="settings-title">🔒 Nhập mật khẩu xem sổ</div>
+    <input type="password" id="settings-pw-input" class="fi" placeholder="Mật khẩu xem sổ..." autocomplete="new-password" onkeydown="if(event.key==='Enter') confirmSettingsPw()">
     <div class="err" id="settings-pw-err">❌ Mật khẩu không đúng!</div>
     <button class="btn btn-main" onclick="confirmSettingsPw()">Mở Cài đặt</button>
     <button class="btn btn-plain" onclick="closeSettingsPwPrompt()">Huỷ</button>
@@ -416,30 +402,28 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
 
 <div class="toast" id="toast"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js" defer></script>
 <script>
 // ============================================================
-// XEM SỔ KHÁCH HÀNG v1.1 — app đồng hành (máy khách) của "Mua Bán Mủ Cao Su"
+// SỔ KHÁCH HÀNG — app đồng hành (máy khách) của "Mua Bán Mủ Cao Su"
 // Dành cho NGƯỜI BÁN mủ tra cứu sổ Thu Mua/Gửi/Ứng của riêng mình.
-// Đăng nhập CHUNG 1 tài khoản Supabase với máy chủ (chủ vựa), chỉ ĐỌC dữ liệu.
-// Nhập đúng Mã khách hàng để xem sổ của riêng mình, không xem được người khác.
-// Nhập đúng MÃ QUẢN TRỊ (của app máy chủ) sẽ vào chế độ quản trị: xem được mọi người bán.
-// Mã đã nhập + phiên đăng nhập được LƯU LẠI, không tự thoát khi tải lại trang.
+// Từ v1.32: KHÔNG đăng nhập Supabase trên máy khách. Nhập Mã KH + Mật khẩu xem sổ (chủ vựa cấp trong app
+// máy chủ) → gọi hàm sokh_xem_khach trên Supabase, máy chủ kiểm tra rồi CHỈ trả về sổ của đúng khách đó.
+// Chủ vựa: email tài khoản Supabase + mật khẩu quản trị → hàm sokh_xem_admin → xem từng khách hoặc tất cả.
+// Mã + mật khẩu đã nhập đúng được LƯU LẠI trên máy, mở app là vào thẳng sổ.
 // ============================================================
 
-function _dc2(s){ try{ var b=atob(s),r='',k='mcsr'; for(var i=0;i<b.length;i++) r+=String.fromCharCode(b.charCodeAt(i)^k.charCodeAt(i%k.length)); return r; }catch(e){ return ''; } }
-var THANG_PW_FALLBACK = _dc2('X1BHR1tU'); // mật khẩu quản lý giao dịch mặc định (khớp máy chủ) — dùng khi chưa tải được dữ liệu
 
 var SB_URL = 'https://tfxtxtwfeepxgzbxtafv.supabase.co';
 var SB_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmeHR4dHdmZWVweGd6Ynh0YWZ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MDMxODMsImV4cCI6MjA5OTI3OTE4M30.PQbSxACwlPJfDBWLCMaTb44UHbHcPsborEscZMKRtCE';
-var CODE_KEY = 'xskh_code';       // Mã khách hàng (hoặc mã quản trị) đã xác thực thành công lần gần nhất
+var CODE_KEY = 'xskh_code';       // Mã khách hàng (hoặc email chủ vựa ở chế độ quản trị) đã xác thực thành công lần gần nhất
+var MK_KEY = 'xskh_mk';           // Mật khẩu xem sổ (hoặc mật khẩu quản trị) đi cùng mã trên
 var ADMIN_SEL_KEY = 'xskh_admin_sel'; // Người bán đang xem trong chế độ quản trị
-var ADMIN_PW_FALLBACK = '28082008';   // Trùng với mật khẩu quản trị mặc định bên máy chủ
 var DEFAULT_REFRESH_SEC = 15;
 var refreshTimer = null;
 
-var sbClient = null;
-var sbUser = null;
+function laEmail(s){ return /@/.test(s || ''); }
+function maDaLuu(){ return localStorage.getItem(CODE_KEY) || ''; }
+function mkDaLuu(){ return localStorage.getItem(MK_KEY) || ''; }
 var isAdminMode = false;
 var lastData = null; // cache dữ liệu vừa tải, dùng khi đổi người xem trong chế độ quản trị
 var _anhViewUrls = []; // danh sách URL ảnh đính kèm của lần render bảng Thu Mua/Bán gần nhất — xem xemAnhKH()
@@ -493,7 +477,7 @@ function toast(msg){
 var _lastDataUpdateAt = null;
 function getConnStatusText(){
   if (!navigator.onLine) return '❌ Lỗi kết nối';
-  if (!sbUser) return '⚠️ Chưa kết nối';
+  if (!maDaLuu() || !mkDaLuu()) return '⚠️ Chưa kết nối';
   var timeStr = '';
   if (_lastDataUpdateAt) {
     var d = _lastDataUpdateAt;
@@ -504,17 +488,16 @@ function getConnStatusText(){
 function refreshConnStatus(){
   var el = document.getElementById('header-sub');
   if (!el) return;
-  var loginActive = document.getElementById('scr-login').classList.contains('active');
-  if (!loginActive) el.textContent = getConnStatusText();
+  if (document.getElementById('scr-data').classList.contains('active')) el.textContent = getConnStatusText();
 }
 window.addEventListener('online', refreshConnStatus);
 window.addEventListener('offline', refreshConnStatus);
 function showScreen(name){
-  ['login','lookup','data'].forEach(function(s){
+  ['lookup','data'].forEach(function(s){
     document.getElementById('scr-'+s).classList.toggle('active', s===name);
   });
-  document.getElementById('btn-settings-top').style.display = (name==='login') ? 'none' : 'inline-flex';
-  document.getElementById('header-sub').textContent = (name==='login')
+  document.getElementById('btn-settings-top').style.display = 'inline-flex';
+  document.getElementById('header-sub').textContent = (name==='lookup')
     ? 'Mua Bán Mủ Cao Su — dành cho người bán tra cứu sổ sách của mình'
     : getConnStatusText();
   if (name === 'lookup') updateCodeHistoryBtnVisibility();
@@ -553,8 +536,9 @@ function closeSettingsPwPrompt(){
 }
 function confirmSettingsPw(){
   var pw = document.getElementById('settings-pw-input').value;
-  var expected = String((lastData && lastData.thangPw != null) ? lastData.thangPw : THANG_PW_FALLBACK).trim();
-  if (pw !== expected) {
+  // Mật khẩu để mở Cài đặt = chính Mật khẩu xem sổ (hoặc mật khẩu quản trị) đang dùng trên máy này
+  var expected = mkDaLuu();
+  if (!expected || pw !== expected) {
     document.getElementById('settings-pw-err').style.display = 'block';
     return;
   }
@@ -564,7 +548,8 @@ function confirmSettingsPw(){
 function renderSettingsAccountLine(){
   var el = document.getElementById('settings-account-line');
   if (!el) return;
-  el.textContent = (sbUser && sbUser.email) ? ('👤 Đã đăng nhập: ' + sbUser.email) : '👤 Chưa đăng nhập';
+  var ma = maDaLuu();
+  el.textContent = !ma ? '👤 Chưa nhập mã' : (isAdminMode ? ('🔑 Quản trị: ' + ma) : ('👤 Đang xem Mã KH: ' + ma));
 }
 function openHuongDan(){
   var verEl = document.getElementById('app-ver');
@@ -591,10 +576,10 @@ function closeSettings(){ document.getElementById('settings-ov').classList.remov
 var CODE_HISTORY_KEY = 'xskh_code_history';
 function getCodeHistory(){ try{ return JSON.parse(localStorage.getItem(CODE_HISTORY_KEY))||[]; }catch(e){ return []; } }
 function setCodeHistory(v){ localStorage.setItem(CODE_HISTORY_KEY, JSON.stringify(v)); }
-function addCodeHistory(id, ten){
+function addCodeHistory(id, ten, mk){
   if (!id || !ten) return;
   var list = getCodeHistory().filter(function(e){ return e.id !== id; }); // bỏ bản ghi cũ của mã này nếu có, sẽ thêm lại lên đầu
-  list.unshift({ id: id, ten: ten });
+  list.unshift({ id: id, ten: ten, mk: mk || '' });
   if (list.length > 20) list = list.slice(0, 20);
   setCodeHistory(list);
   updateCodeHistoryBtnVisibility();
@@ -621,7 +606,11 @@ function openCodeHistory(){
 function closeCodeHistory(){ document.getElementById('code-history-ov').classList.remove('show'); }
 function selectCodeFromHistory(id){
   closeCodeHistory();
+  datCheDoNhap(false);
+  var e = getCodeHistory().filter(function(x){ return x.id === id; })[0] || {};
   document.getElementById('lookup-id').value = id;
+  document.getElementById('lookup-mk').value = e.mk || '';
+  if (!e.mk) { document.getElementById('lookup-mk').focus(); return; } // mã lưu từ bản cũ chưa có mật khẩu
   traCuu();
 }
 
@@ -637,32 +626,27 @@ function setupAutoRefresh(){
 }
 // Làm mới ngầm: tải lại dữ liệu từ Supabase và vẽ lại đúng màn đang xem — KHÔNG reload cả trang nên không chớp màn hình
 function silentRefresh(){
-  if (!sbUser) return;
+  if (!maDaLuu() || !mkDaLuu()) return;
   if (!document.getElementById('scr-data').classList.contains('active')) return; // chỉ làm mới khi đang xem sổ
-  fetchAllData(function(data){
+  fetchAllData(maDaLuu(), mkDaLuu(), function(data){
     lastData = data;
-    var savedCode = localStorage.getItem(CODE_KEY);
-    if (isAdminMode) {
-      // Chủ vựa đã đổi mật khẩu quản trị → thoát chế độ quản trị trên máy này
-      var adminPw = String(data.adminPw != null ? data.adminPw : ADMIN_PW_FALLBACK).trim();
-      if (savedCode !== adminPw) { _veManNhapMa('🔒 Mã quản trị đã thay đổi, vui lòng nhập lại.'); return; }
-      renderAdminHome(data);
-    } else {
-      if (!savedCode) return;
-      var idUpper = savedCode.toUpperCase();
-      var ten = null;
-      for (var t in data.khIds) { if (String(data.khIds[t]||'').toUpperCase() === idUpper) { ten = t; break; } }
-      // Chủ vựa đổi/xoá Mã KH này → không tiếp tục hiện sổ cũ
-      if (!ten) { _veManNhapMa('⚠️ Mã khách hàng ' + savedCode + ' không còn hiệu lực. Liên hệ chủ vựa để lấy mã mới.'); return; }
-      renderCustomerData(ten, idUpper, data);
-    }
-  }, function(){ /* lỗi mạng tạm thời: bỏ qua, thử lại ở lượt sau */ });
+    if (isAdminMode) renderAdminHome(data);
+    else renderCustomerData(data.ten, data.ma, data);
+  }, function(loi){
+    // Chủ vựa đổi mật khẩu xem sổ / mật khẩu quản trị, hoặc xoá mã → không tiếp tục hiện sổ cũ
+    if (loi === 'sai') _veManNhapMa(isAdminMode ? '🔒 Mật khẩu quản trị đã thay đổi, vui lòng đăng nhập lại.' : '⚠️ Mã hoặc mật khẩu xem sổ đã thay đổi. Liên hệ chủ vựa để lấy mật khẩu mới.');
+    /* lỗi mạng tạm thời: bỏ qua, thử lại ở lượt sau */
+  });
 }
 function _veManNhapMa(msg){
+  var laAdmin = isAdminMode, ma = maDaLuu();
   localStorage.removeItem(CODE_KEY);
+  localStorage.removeItem(MK_KEY);
   localStorage.removeItem(ADMIN_SEL_KEY);
   isAdminMode = false;
-  document.getElementById('lookup-id').value = '';
+  datCheDoNhap(laAdmin);
+  document.getElementById('lookup-id').value = ma; // giữ sẵn mã, chỉ cần nhập lại mật khẩu
+  document.getElementById('lookup-mk').value = '';
   var errEl = document.getElementById('lookup-err');
   errEl.textContent = msg; errEl.style.display = 'block';
   showScreen('lookup');
@@ -674,105 +658,63 @@ document.addEventListener('visibilitychange', function(){
 function onSwitchCode(){
   closeSettings();
   localStorage.removeItem(CODE_KEY);
+  localStorage.removeItem(MK_KEY);
   localStorage.removeItem(ADMIN_SEL_KEY);
   isAdminMode = false;
+  datCheDoNhap(false);
   document.getElementById('lookup-id').value = '';
+  document.getElementById('lookup-mk').value = '';
   document.getElementById('lookup-err').style.display = 'none';
   showScreen('lookup');
 }
-var _dangDangXuat = false; // đăng xuất chủ động → không hiện lời nhắc "phiên hết hạn"
-function doLogout(){
-  closeSettings();
-  if (!sbClient) return;
-  _dangDangXuat = true;
-  sbClient.auth.signOut().then(function(){
-    _dangDangXuat = false;
-    sbUser = null;
-    isAdminMode = false;
-    localStorage.removeItem(CODE_KEY);
-    localStorage.removeItem(ADMIN_SEL_KEY);
-    document.getElementById('login-email').value = '';
-    document.getElementById('login-pass').value = '';
-    document.getElementById('lookup-id').value = '';
-    showScreen('login');
-    toast('Đã đăng xuất');
-  });
+// Chuyển màn nhập giữa Khách hàng (Mã KH + mật khẩu xem sổ) và Chủ vựa (email + mật khẩu quản trị)
+var _cheDoAdminNhap = false;
+function datCheDoNhap(admin){
+  _cheDoAdminNhap = !!admin;
+  var id = document.getElementById('lookup-id');
+  id.setAttribute('inputmode', admin ? 'email' : 'numeric');
+  id.setAttribute('type', admin ? 'email' : 'text');
+  if (admin) id.removeAttribute('pattern'); else id.setAttribute('pattern', '[0-9]*');
+  id.placeholder = admin ? 'email@vidu.com' : '12345';
+  document.getElementById('lookup-id-lbl').textContent = admin ? 'Email tài khoản chủ vựa' : 'Mã khách hàng';
+  document.getElementById('lookup-mk-lbl').textContent = admin ? 'Mật khẩu quản trị' : 'Mật khẩu xem sổ';
+  document.getElementById('lookup-hint').innerHTML = admin
+    ? '🔑 <b>Chế độ quản trị</b>: nhập email tài khoản Supabase của vựa và mật khẩu quản trị của app Mua Bán Mủ Cao Su để xem sổ của mọi khách hàng.'
+    : 'Chào người bán! Nhập <b>Mã khách hàng</b> và <b>Mật khẩu xem sổ</b> mà chủ vựa đã cung cấp để xem sổ Thu Mua, Gửi sổ và Ứng tiền của mình.';
+  document.getElementById('btn-admin-mode').textContent = admin ? '👤 Khách hàng xem sổ' : '🔑 Chủ vựa đăng nhập quản trị';
+  document.getElementById('btn-code-history').style.visibility = admin ? 'hidden' : '';
+}
+function doiCheDoNhap(){
+  datCheDoNhap(!_cheDoAdminNhap);
+  document.getElementById('lookup-id').value = '';
+  document.getElementById('lookup-mk').value = '';
+  document.getElementById('lookup-err').style.display = 'none';
 }
 
-// Khoá lưu phiên đăng nhập RIÊNG của app (từ v1.30). Bản v1.29 trở về trước lưu ở khoá mặc định
-// 'sb-<project>-auth-token' — bản v1.30 đổi khoá mà KHÔNG chuyển phiên cũ sang, khiến mọi máy khách hàng bị
-// đăng xuất (khách không biết mật khẩu Supabase để tự đăng nhập lại). Hàm này CHUYỂN (chép rồi xoá khoá cũ)
-// phiên cũ sang khoá mới đúng 1 lần nếu khoá mới chưa có. Xoá khoá cũ để không có 2 app cùng dùng 1 phiên
-// (Supabase sẽ thu hồi cả phiên nếu 2 nơi cùng làm mới 1 refresh token).
-var SB_STORAGE_KEY = 'xskh-sb-auth';
-var SB_OLD_STORAGE_KEY = 'sb-tfxtxtwfeepxgzbxtafv-auth-token';
-function _chuyenPhienCu(){
-  try {
-    if (localStorage.getItem(SB_STORAGE_KEY)) return;
-    var cu = localStorage.getItem(SB_OLD_STORAGE_KEY);
-    if (!cu) return;
-    localStorage.setItem(SB_STORAGE_KEY, cu);
-    localStorage.removeItem(SB_OLD_STORAGE_KEY);
-  } catch(e) {}
-}
-function initSupabase(){
-  if (typeof window.supabase === 'undefined') { setTimeout(initSupabase, 400); return; }
-  // Phiên đăng nhập lưu ở khoá riêng của app: app Mủ Cao Su và Khai Thuế dùng chung project Supabase này,
-  // nếu cùng khoá mặc định 'sb-<project>-auth-token' thì đăng xuất ở app này sẽ đăng xuất luôn app kia.
-  _chuyenPhienCu();
-  sbClient = window.supabase.createClient(SB_URL, SB_ANON_KEY, { auth: { storageKey: SB_STORAGE_KEY } });
-  // Phiên bị thu hồi / hết hạn không làm mới được (VD chủ vựa đổi mật khẩu tài khoản) → về màn đăng nhập
-  // với lời nhắc rõ ràng, thay vì vẫn ở màn xem sổ rồi báo "không tìm thấy khách hàng" khó hiểu.
-  sbClient.auth.onAuthStateChange(function(event, session){
-    if (event === 'SIGNED_OUT' || (!session && sbUser)) {
-      if (!sbUser || _dangDangXuat) return;
-      sbUser = null;
-      showScreen('login');
-      var errEl = document.getElementById('login-err');
-      if (errEl) { errEl.textContent = '⚠️ Phiên đăng nhập đã hết hạn — nhờ chủ vựa đăng nhập lại giúp. Mã khách hàng đã lưu sẽ tự mở lại.'; errEl.style.display = 'block'; }
-    } else if (session && session.user) {
-      sbUser = session.user;
+// Khởi động: bản cũ (≤ v1.31) đăng nhập tài khoản Supabase của chủ vựa trên máy khách — nay không cần nữa,
+// xoá phiên đó khỏi máy (không để tài khoản chủ vựa nằm trên điện thoại khách). Có mã + mật khẩu đã lưu
+// thì vào thẳng sổ; bản cũ chỉ lưu mã (chưa có mật khẩu) thì điền sẵn mã, nhắc nhập mật khẩu.
+function khoiDong(){
+  try { localStorage.removeItem('xskh-sb-auth'); } catch(e){}
+  var ma = maDaLuu(), mk = mkDaLuu();
+  showScreen('lookup');
+  if (ma && mk) { datCheDoNhap(laEmail(ma)); traCuu(ma, mk); return; }
+  if (ma && !laEmail(ma)) {
+    if (/^\d{5}$/.test(ma)) {
+      document.getElementById('lookup-id').value = ma;
+      var errEl = document.getElementById('lookup-err');
+      errEl.textContent = '🔑 Từ bản mới, cần nhập thêm Mật khẩu xem sổ (6 số) — hỏi chủ vựa nếu chưa có. Chỉ nhập 1 lần.';
+      errEl.style.display = 'block';
     }
-  });
-  sbClient.auth.getSession().then(function(res){
-    var session = res.data && res.data.session;
-    if (session && session.user) {
-      sbUser = session.user;
-      var savedCode = localStorage.getItem(CODE_KEY);
-      showScreen('lookup');
-      if (savedCode) { traCuu(savedCode); }
-    } else {
-      showScreen('login');
-    }
-  }).catch(function(){ showScreen('login'); });
+    localStorage.removeItem(CODE_KEY); // mã cũ chưa xác thực bằng mật khẩu (hoặc mã quản trị kiểu cũ) → bỏ
+  }
 }
-initSupabase();
+khoiDong();
 
 function setBtnLoading(id, loading, textDefault){
   var b = document.getElementById(id);
   b.disabled = loading;
   b.innerHTML = loading ? '<span class="spin"></span>Đang xử lý...' : textDefault;
-}
-
-function doLogin(){
-  var email = (document.getElementById('login-email').value||'').trim();
-  var pass = document.getElementById('login-pass').value||'';
-  var errEl = document.getElementById('login-err');
-  errEl.style.display = 'none';
-  if (!email || !pass) { errEl.textContent = '⚠️ Vui lòng nhập đầy đủ email và mật khẩu'; errEl.style.display = 'block'; return; }
-  setBtnLoading('btn-login', true, 'Đăng nhập');
-  sbClient.auth.signInWithPassword({ email: email, password: pass }).then(function(res){
-    setBtnLoading('btn-login', false, 'Đăng nhập');
-    if (res.error) { errEl.textContent = '❌ ' + res.error.message; errEl.style.display = 'block'; return; }
-    sbUser = res.data.user;
-    document.getElementById('login-pass').value = '';
-    var savedCode = localStorage.getItem(CODE_KEY);
-    showScreen('lookup');
-    if (savedCode) { traCuu(savedCode); } // tự đổ lại mã đã lưu, tránh phải nhập lại dù vẫn còn trong bộ nhớ máy
-  }).catch(function(e){
-    setBtnLoading('btn-login', false, 'Đăng nhập');
-    errEl.textContent = '❌ Lỗi: ' + e.message; errEl.style.display = 'block';
-  });
 }
 
 function fmtVND(n){ return Math.round(n||0).toLocaleString('vi-VN'); }
@@ -803,78 +745,92 @@ function sortMoiNhat(a,b){
   return (b.id||0) - (a.id||0);
 }
 
-function fetchAllData(cb, errCb){
-  sbClient.from('mucaosu_data').select('data_key,data_value').eq('user_id', sbUser.id).then(function(res){
-    if (res.error) { errCb && errCb(res.error.message); return; }
-    var map = {};
-    (res.data||[]).forEach(function(r){ map[r.data_key] = r.data_value; });
-    cb({
-      mua: map['gd3_mua'] || [],
-      ban: map['gd3_ban'] || [],
-      sg: map['sg3'] || [],
-      su: map['su_data'] || [],
-      cc: map['cc_data'] || [],
-      khIds: map['kh_ids'] || {},
-      khInfo: map['kh_info'] || {},
-      adminPw: map['admin_pw'],
-      thangPw: map['thang_pw'],
-      muaChotMap: map['mua_chot_moc'] || {}
+// Gọi hàm trên Supabase bằng khoá công khai (anon) — không cần đăng nhập. Hàm tự kiểm tra mã + mật khẩu.
+function goiHamSupabase(ten, thamSo){
+  return fetch(SB_URL + '/rest/v1/rpc/' + ten, {
+    method: 'POST',
+    headers: { 'apikey': SB_ANON_KEY, 'Authorization': 'Bearer ' + SB_ANON_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify(thamSo)
+  }).then(function(r){
+    return r.json().then(function(j){
+      if (!r.ok) throw new Error((j && (j.message || j.hint)) || ('Lỗi máy chủ ' + r.status));
+      return j;
     });
-  }).catch(function(e){ errCb && errCb(e.message); });
+  });
+}
+// Tải sổ theo mã + mật khẩu. cb(data) khi đúng; errCb(loi, phut) với loi = 'sai' | 'khoa' | thông báo lỗi mạng
+function fetchAllData(ma, mk, cb, errCb){
+  var admin = laEmail(ma);
+  goiHamSupabase(admin ? 'sokh_xem_admin' : 'sokh_xem_khach', admin ? { p_email: ma, p_mk: mk } : { p_ma: ma, p_mk: mk }).then(function(res){
+    if (!res || res.loi) { errCb && errCb(res ? res.loi : 'sai', res && res.phut); return; }
+    var arr = function(v){ return Array.isArray(v) ? v : []; };
+    var obj = function(v){ return (v && typeof v === 'object' && !Array.isArray(v)) ? v : {}; };
+    var data = { mua: arr(res.mua), ban: arr(res.ban), sg: arr(res.sg), su: arr(res.su), cc: arr(res.cc), admin: !!res.admin };
+    if (admin) {
+      data.khIds = obj(res.kh_ids); data.khInfo = obj(res.kh_info); data.muaChotMap = obj(res.mua_chot);
+    } else {
+      data.ten = res.ten; data.ma = res.ma;
+      data.khIds = {}; data.khIds[res.ten] = res.ma;
+      data.khInfo = {}; data.khInfo[normTen(res.ten)] = obj(res.kh_info);
+      data.muaChotMap = {}; if (res.mua_chot) data.muaChotMap[res.ten] = res.mua_chot;
+    }
+    cb(data);
+  }).catch(function(e){ errCb && errCb((e && e.message) || 'Lỗi kết nối'); });
 }
 
-function traCuu(codeOverride){
-  var isManualLookup = (codeOverride == null); // true = người dùng vừa bấm tra cứu/chọn mã (kể cả từ lịch sử) — KHÁC với lần tự động resume mã đã lưu lúc mở app
+function traCuu(codeOverride, mkOverride){
+  var isManualLookup = (codeOverride == null); // true = người dùng vừa bấm tra cứu/chọn mã — KHÁC với lần tự mở lại mã đã lưu lúc mở app
   var idRaw = (codeOverride != null ? codeOverride : (document.getElementById('lookup-id').value || '')).trim();
+  var mk = (mkOverride != null ? mkOverride : (document.getElementById('lookup-mk').value || '')).trim();
+  var admin = laEmail(idRaw);
   var errEl = document.getElementById('lookup-err');
   errEl.style.display = 'none';
-  if (!idRaw) { errEl.textContent = '⚠️ Vui lòng nhập Mã khách hàng'; errEl.style.display = 'block'; return; }
-  if (!sbUser) { errEl.textContent = '⚠️ Phiên đăng nhập đã hết, vui lòng đăng nhập lại'; errEl.style.display = 'block'; showScreen('login'); return; }
+  if (!idRaw) { errEl.textContent = admin || _cheDoAdminNhap ? '⚠️ Vui lòng nhập email' : '⚠️ Vui lòng nhập Mã khách hàng'; errEl.style.display = 'block'; return; }
+  if (!mk) { errEl.textContent = admin ? '⚠️ Vui lòng nhập mật khẩu quản trị' : '⚠️ Vui lòng nhập Mật khẩu xem sổ'; errEl.style.display = 'block'; return; }
   setBtnLoading('btn-lookup', true, '🔍 Xem sổ của tôi');
-  fetchAllData(function(data){
+  fetchAllData(idRaw, mk, function(data){
     setBtnLoading('btn-lookup', false, '🔍 Xem sổ của tôi');
     lastData = data;
-    var adminPw = String(data.adminPw != null ? data.adminPw : ADMIN_PW_FALLBACK).trim();
-
-    if (idRaw === adminPw) {
+    localStorage.setItem(CODE_KEY, idRaw);
+    localStorage.setItem(MK_KEY, mk);
+    document.getElementById('lookup-mk').value = '';
+    if (admin) {
       // ── CHẾ ĐỘ QUẢN TRỊ ──
       isAdminMode = true;
-      localStorage.setItem(CODE_KEY, idRaw);
+      if (isManualLookup) localStorage.removeItem(ADMIN_SEL_KEY);
       renderAdminHome(data);
       showScreen('data');
       return;
     }
-
-    var idUpper = idRaw.toUpperCase();
-    var ten = null;
-    for (var t in data.khIds) { if (String(data.khIds[t]||'').toUpperCase() === idUpper) { ten = t; break; } }
-    if (!ten) { errEl.textContent = '❌ Không tìm thấy khách hàng với mã này. Kiểm tra lại mã hoặc hỏi chủ vựa.'; errEl.style.display = 'block'; return; }
-
     isAdminMode = false;
-    localStorage.setItem(CODE_KEY, idRaw);
-    addCodeHistory(idUpper, ten);
+    addCodeHistory(data.ma, data.ten, mk);
     if (isManualLookup) _resetDateFilterToAll(); // đổi/tra cứu lại mã (kể cả đúng mã cũ) → luôn về "Xem tất cả"
     document.getElementById('admin-header-card').style.display = 'none';
     document.getElementById('normal-header-card').style.display = '';
     document.getElementById('data-empty-hint').style.display = 'none';
-    renderCustomerData(ten, idUpper, data);
+    renderCustomerData(data.ten, data.ma, data);
     showScreen('data');
-  }, function(msg){
+  }, function(loi, phut){
     setBtnLoading('btn-lookup', false, '🔍 Xem sổ của tôi');
-    errEl.textContent = '❌ Lỗi tải dữ liệu: ' + msg; errEl.style.display = 'block';
+    if (!isManualLookup && (loi === 'sai' || loi === 'khoa')) { localStorage.removeItem(MK_KEY); datCheDoNhap(admin); document.getElementById('lookup-id').value = idRaw; }
+    errEl.textContent = loi === 'sai' ? (admin ? '❌ Sai email hoặc mật khẩu quản trị.' : '❌ Sai Mã khách hàng hoặc Mật khẩu xem sổ. Kiểm tra lại hoặc hỏi chủ vựa.')
+      : loi === 'khoa' ? ('⛔ Nhập sai quá nhiều lần — thử lại sau ' + (phut || 15) + ' phút.')
+      : ('❌ Lỗi tải dữ liệu: ' + loi);
+    errEl.style.display = 'block';
   });
 }
 
+var TAT_CA = '__TAT_CA__'; // giá trị "📋 Tất cả khách hàng" trong menu chọn ở chế độ quản trị
 function renderAdminHome(data){
   document.getElementById('admin-header-card').style.display = '';
   document.getElementById('normal-header-card').style.display = 'none';
   var sel = document.getElementById('admin-select');
   var names = Object.keys(data.khIds||{}).sort(function(a,b){ return a.localeCompare(b,'vi'); });
   var savedSel = localStorage.getItem(ADMIN_SEL_KEY) || '';
-  sel.innerHTML = '<option value="">-- Chọn người bán --</option>' + names.map(function(n){
+  sel.innerHTML = '<option value="">-- Chọn khách hàng --</option><option value="' + TAT_CA + '"' + (savedSel===TAT_CA?' selected':'') + '>📋 Tất cả khách hàng</option>' + names.map(function(n){
     return '<option value="'+esc(n)+'"'+(n===savedSel?' selected':'')+'>'+esc(n)+'</option>';
   }).join('');
-  if (savedSel && names.indexOf(savedSel) >= 0) {
+  if (savedSel && (savedSel === TAT_CA || names.indexOf(savedSel) >= 0)) {
     document.getElementById('data-empty-hint').style.display = 'none';
     renderCustomerData(savedSel, null, data, true);
   } else {
@@ -996,26 +952,30 @@ function renderCustomerData(ten, id, data, isAdminCall){
     document.getElementById('cust-info-ticker').style.display = 'none';
   }
 
-  var muaChotDate = getMuaChotMocFor(data.muaChotMap||{}, ten); // chuỗi 'yyyy-mm-dd' đã chốt đến hết ngày này, hoặc '' nếu chưa chốt
+  // "📋 Tất cả khách hàng" (chế độ quản trị): gộp sổ của mọi khách, thêm cột Tên, mốc chốt áp dụng riêng từng khách
+  var laTatCa = (ten === TAT_CA);
+  var muaChotDate = laTatCa ? '' : getMuaChotMocFor(data.muaChotMap||{}, ten); // chuỗi 'yyyy-mm-dd' đã chốt đến hết ngày này, hoặc '' nếu chưa chốt
   // Khớp tên KHÔNG phân biệt hoa/thường và khoảng trắng thừa — giống app máy chủ (cùng 1 Mã KH cho các cách
   // gõ tên khác nhau), để không sót giao dịch khi chủ vựa lỡ gõ tên lệch chữ hoa/khoảng trắng.
   var tenN = normTen(ten);
-  function laCuaKhach(r){ return normTen(r.ten) === tenN; }
+  function laCuaKhach(r){ return laTatCa || normTen(r.ten) === tenN; }
   var muaAll = (data.mua||[]).filter(laCuaKhach);
   // Nếu chủ vựa đã "Chốt danh sách Thu Mua" đến 1 ngày cụ thể: chỉ hiện các giao dịch có NGÀY SAU ngày chốt đó
-  var mua = (muaChotDate ? muaAll.filter(function(r){ return (r.date||'') > muaChotDate; }) : muaAll)
-    .sort(sortMoiNhat);
-  var muaSoAn = muaChotDate ? (muaAll.length - mua.length) : 0;
+  var mua = muaAll.filter(function(r){
+    var moc = laTatCa ? getMuaChotMocFor(data.muaChotMap||{}, r.ten) : muaChotDate;
+    return !moc || (r.date||'') > moc;
+  }).sort(sortMoiNhat);
+  var muaSoAn = muaAll.length - mua.length;
   var ban = (data.ban||[]).filter(laCuaKhach).sort(sortMoiNhat);
   var sg  = (data.sg||[]).filter(laCuaKhach).sort(sortMoiNhat);
   var su  = (data.su||[]).filter(laCuaKhach).sort(sortMoiNhat);
   var cc  = (data.cc||[]).filter(laCuaKhach).sort(sortMoiNhat);
 
   // Người chỉ có sổ Chấm Công (công nhân), không phải khách hàng mua/bán/gửi/ứng -> ẩn hẳn các thẻ không liên quan
-  var isCongNhanOnly = (muaAll.length===0 && ban.length===0 && sg.length===0 && su.length===0 && cc.length>0);
+  var isCongNhanOnly = !laTatCa && (muaAll.length===0 && ban.length===0 && sg.length===0 && su.length===0 && cc.length>0);
 
   // Tự động phát hiện vai trò: có Bán mà không có Thu Mua -> đây là NGƯỜI MUA (đầu mối mua lại hàng)
-  var isBuyer = (muaAll.length === 0 && ban.length > 0);
+  var isBuyer = !laTatCa && (muaAll.length === 0 && ban.length > 0);
 
   // ── Khối "🗓 Lọc theo thời gian": tính khoảng ngày sẵn có (trước khi lọc) để làm mặc định khi bật
   // chế độ có chọn ngày — Từ ngày mặc định = giao dịch xa nhất đang có ──
@@ -1082,16 +1042,22 @@ function renderCustomerData(ten, id, data, isAdminCall){
     {label:'Nội dung', key:'noidung'},
     {label:'Trạng thái', fmt:function(r){ return r.chot ? '<span class="badge badge-closed">Đã chốt</span>' : '<span class="badge badge-open">Chưa chốt</span>'; }}
   ];
+  if (laTatCa) {
+    var cotTen = {label:'Tên', fmt:function(r){ return '<b>' + esc(r.ten) + '</b>'; }};
+    colsGD.splice(1, 0, cotTen); colsSG.splice(1, 0, cotTen); colsSU.splice(1, 0, cotTen);
+  }
 
   // ── LỊCH SỬ CHÍNH: Thu Mua (người bán) hoặc Bán — đổi tên cho phù hợp góc nhìn người mua lại hàng ──
   // (áp dụng bộ lọc thời gian nếu đang bật "Xem theo khoảng thời gian")
   var primaryRowsAll = isBuyer ? ban : mua;
   var primaryRows = applyDateFilter(primaryRowsAll);
-  var primaryLabel = isBuyer ? '🚛 Lịch sử mua hàng từ vựa' : '📥 Lịch sử Thu Mua';
+  var primaryLabel = isBuyer ? '🚛 Lịch sử mua hàng từ vựa' : (laTatCa ? '📥 Thu Mua — tất cả khách' : '📥 Lịch sử Thu Mua');
   var primaryTotal = primaryRows.reduce(function(s,x){ return s + (x.tt||0); }, 0);
   document.getElementById('primary-title').innerHTML = primaryLabel + ' (<span id="cnt-primary">' + primaryRows.length + '</span>)';
   var primaryNoteEl = document.getElementById('primary-note');
-  if (!isBuyer && muaSoAn > 0) {
+  if (!isBuyer && muaSoAn > 0 && laTatCa) {
+    if (primaryNoteEl) primaryNoteEl.innerHTML = '🔒 ' + muaSoAn + ' giao dịch đã chốt (theo mốc chốt riêng của từng khách) đang được ẩn.';
+  } else if (!isBuyer && muaSoAn > 0) {
     var chotDD = muaChotDate ? muaChotDate.split('-').reverse().join('/') : '';
     if (primaryNoteEl) primaryNoteEl.innerHTML = '🔒 ' + muaSoAn + ' giao dịch từ ngày ' + chotDD + ' trở về trước đã được ẩn (đã chốt) — liên hệ chủ vựa nếu cần xem lại.';
   } else if (primaryNoteEl) {
@@ -1136,7 +1102,7 @@ function renderCustomerData(ten, id, data, isAdminCall){
   // ── Chấm Công (chỉ hiện nếu người này có trong sổ Chấm Công) ──
   document.getElementById('card-cc').style.display = cc.length > 0 ? '' : 'none';
   if (cc.length > 0) {
-    document.getElementById('cc-list').innerHTML = cc.map(renderCcCard).join('');
+    document.getElementById('cc-list').innerHTML = cc.map(function(r){ return renderCcCard(r, laTatCa); }).join('');
   }
 }
 
@@ -1162,12 +1128,13 @@ function ccCalcTotals(r){
   return {luongThang:luongThang, luongNgay:luongNgay, soNgayLam:soNgayLam, soNgayNghi:soNgayNghi,
     tienTruNghi:tienTruNghi, soTienUng:soTienUng, soTienThuong:soTienThuong, thucLinh:thucLinh};
 }
-function renderCcCard(r){
+function renderCcCard(r, kemTen){
   var t = ccCalcTotals(r);
   var chotTag = r.chotCong
     ? '<span class="badge badge-closed">🔒 Đã chốt '+fmtDateSmart(r.chotDate)+'</span>'
     : '<span class="badge badge-open">🟢 Đang mở</span>';
   return '<div style="background:var(--g50,#f7f7f5);border-radius:10px;padding:10px 12px;margin-bottom:8px">'
+    + (kemTen ? '<div style="font-weight:800;font-size:13.5px;color:var(--gd);margin-bottom:2px">👷 ' + esc(r.ten) + '</div>' : '')
     + '<div style="font-weight:700;font-size:13px;margin-bottom:4px">📅 Từ '+fmtDateSmart(r.date)+' đến '+fmtDateSmart(ccEffectiveEnd(r))+' '+chotTag+'</div>'
     + '<div style="font-size:12.5px;color:var(--g600,#666);line-height:1.7">'
     + '✔ Ngày làm: <b style="color:#16a34a">'+t.soNgayLam+'</b> ngày &nbsp;·&nbsp; ✗ Ngày nghỉ: <b style="color:#dc2626">'+t.soNgayNghi+'</b> ngày<br>'

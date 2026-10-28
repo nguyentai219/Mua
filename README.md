@@ -1,21 +1,24 @@
-# Sổ Khách Hàng (v1.31)
+# Sổ Khách Hàng (v1.32)
 
 Ứng dụng đồng hành ("máy khách") của app **Mua Bán Mủ Cao Su**. Cài trên điện thoại của khách hàng bán mủ, cho phép họ tự tra cứu sổ **Thu Mua / Gửi sổ / Ứng tiền** của riêng mình — không xem được dữ liệu của khách hàng khác, và không xem được **Bán** (giao dịch bán cho vựa lớn, không liên quan tới khách hàng cá nhân).
 
-## Cách hoạt động
+## Cách hoạt động (từ v1.32)
 
-1. **Máy chủ** (chủ vựa) dùng app "Mua Bán Mủ Cao Su", đăng nhập Supabase, ghi chép Mua/Bán/Gửi/Ứng như bình thường — dữ liệu tự động đồng bộ lên Supabase.
-2. Trong app chính, bấm icon **👥** (góc trên), tìm tên khách hàng, bấm "Sao chép" để lấy **Mã KH** (5 chữ số, cố định, không đổi).
-3. **Máy khách** (điện thoại khách hàng) cài app này, đăng nhập **CÙNG tài khoản Supabase** với máy chủ (chỉ cần làm 1 lần duy nhất trên máy đó — chủ vựa tự tay đăng nhập giúp khách hàng khi giao máy/cài đặt).
-4. Từ đó về sau, khách hàng chỉ cần mở app, nhập **Mã KH** của mình để xem sổ — không cần đăng nhập lại, không cần biết mật khẩu tài khoản Supabase.
+1. **Máy chủ** (chủ vựa) dùng app "Mua Bán Mủ Cao Su", đăng nhập Supabase, ghi chép như bình thường — dữ liệu tự đồng bộ lên Supabase.
+2. Trong app chính, bấm icon **👥**: mỗi khách có **Mã KH** (5 số) và **Mật khẩu xem sổ** (6 số, tự cấp; nút 🔄 Đổi để cấp mới). Nút 📋 Sao chép lấy cả 2 để gửi khách qua Zalo.
+3. **Máy khách** cài app này, nhập **Mã KH + Mật khẩu xem sổ** — **không cần đăng nhập Supabase**, không cần email.
+4. App gọi hàm `sokh_xem_khach` trên Supabase: máy chủ kiểm tra mã + mật khẩu rồi **chỉ trả về sổ của đúng khách đó**. Máy khách không đọc được dữ liệu của ai khác.
+5. **Chế độ quản trị**: bấm "🔑 Chủ vựa đăng nhập quản trị", nhập **email tài khoản Supabase của vựa** + **mật khẩu quản trị** (của app chính) → hàm `sokh_xem_admin` → menu chọn **từng khách** hoặc **📋 Tất cả khách hàng**.
 
-## Bảo mật — LƯU Ý QUAN TRỌNG
+### Cài đặt phía Supabase (1 lần)
+Chạy file `supabase-so-khach-hang.sql` trong Supabase → SQL Editor. Tạo 2 hàm `sokh_xem_khach`, `sokh_xem_admin` (chạy quyền chủ, chỉ trả đúng phần được phép) và bảng đếm lần nhập sai (sai 5 lần → khoá mã/tài khoản đó 15 phút).
 
-- App này dùng **chung 1 tài khoản Supabase** với máy chủ để đọc dữ liệu, sau đó **lọc theo Mã KH ngay trên máy khách hàng** (không có phân quyền phía server theo từng khách hàng).
-- Nghĩa là: ai có **email + mật khẩu** của tài khoản Supabase đều có thể xem được **toàn bộ** dữ liệu (không riêng của 1 khách hàng), nếu họ tự đăng nhập trực tiếp bằng tài khoản đó thay vì dùng app này.
-- Vì vậy: **chỉ chủ vựa mới nên biết email/mật khẩu Supabase**, tự tay đăng nhập vào máy khách hàng, và **không chia sẻ mật khẩu Supabase cho khách hàng** — họ chỉ cần Mã KH.
-- Đây là giải pháp đơn giản, phù hợp quy mô nhỏ giữa các bên tin tưởng nhau. Nếu cần phân quyền chặt chẽ hơn (mỗi khách hàng chỉ được server cho phép xem đúng dữ liệu của mình, kể cả khi biết mật khẩu), cần nâng cấp lên cơ chế Row Level Security (RLS) theo khách hàng — phức tạp hơn, có thể làm ở phiên bản sau nếu cần.
-- **Chế độ quản trị (từ v1.1)**: nếu ai đó nhập đúng **Mã quản trị** (mật khẩu quản trị của app máy chủ) vào ô "Mã khách hàng", họ sẽ xem được **toàn bộ** người bán chứ không chỉ 1 người. Vì vậy Mã quản trị càng cần được giữ kín hơn Mã khách hàng thông thường.
+## Bảo mật
+
+- Máy khách **không** còn chứa tài khoản Supabase của chủ vựa; khoá phiên cũ (`xskh-sb-auth`) được xoá khỏi máy khi mở bản v1.32.
+- Mỗi Mã KH + mật khẩu chỉ xem được đúng sổ của khách đó — kiểm tra trên máy chủ, không thể vượt qua bằng cách sửa app.
+- Mật khẩu xem sổ lưu trong dữ liệu riêng của chủ vựa (khoá `kh_pw`, chỉ chủ vựa đọc được). Khách làm lộ/quên → chủ vựa bấm 🔄 Đổi.
+- **Mật khẩu quản trị mặc định của app chính là 28082008 và giống nhau ở mọi vựa** — chủ vựa nên đổi mật khẩu quản trị, vì ai biết email vựa + mật khẩu quản trị đều xem được toàn bộ sổ.
 
 ## Triển khai
 
@@ -29,6 +32,7 @@ nguyentai219.github.io/XemSoKhachHang/
 
 | Phiên bản | Ngày | Thay đổi |
 |---|---|---|
+| **v1.32** | 2026-10-28 | 🔑 **Xem sổ bằng Mã KH + Mật khẩu, không cần đăng nhập Supabase trên máy khách**: app gọi hàm `sokh_xem_khach` trên Supabase (máy chủ kiểm tra và chỉ trả sổ của đúng khách). Chế độ quản trị mới: email tài khoản vựa + mật khẩu quản trị (hàm `sokh_xem_admin`), menu chọn từng khách hoặc **📋 Tất cả khách hàng** (có cột Tên). Sai 5 lần khoá 15 phút. Máy bản cũ: mã đã lưu được điền sẵn, chỉ cần nhập mật khẩu 1 lần; phiên Supabase cũ bị xoá khỏi máy. Chủ vựa đổi mật khẩu → máy khách tự về màn nhập. Mật khẩu mở Cài đặt = mật khẩu xem sổ. Bỏ thư viện supabase-js. Cần chạy `supabase-so-khach-hang.sql` 1 lần. |
 | **v1.31** | 2026-10-28 | 🐛 **Sửa lỗi toàn diện**: (1) **Máy khách hàng bị đăng xuất sau khi lên v1.30** — v1.30 đổi khoá lưu phiên Supabase sang `xskh-sb-auth` nhưng không chuyển phiên cũ, nên mọi máy phải đăng nhập lại (khách không biết mật khẩu). Nay tự chuyển phiên từ khoá cũ `sb-<project>-auth-token` sang khoá mới (chép rồi xoá khoá cũ để không 2 app dùng chung 1 phiên). (2) **Không nhập được Mã quản trị** vào ô Mã khách hàng (ô giới hạn 5 ký tự, mã quản trị 8 số) — nâng lên 20. (3) **Service Worker**: chỉ xử lý request GET cùng gốc (trước đây request Supabase lỗi mạng bị trả nhầm trang index.html), luôn hỏi lại máy chủ khi tải trang/icon/manifest (bản mới hiện ngay, không popup "cập nhật biểu tượng"), cài đặt bỏ qua bộ nhớ đệm HTTP, mất mạng mở trang vẫn ra app. (4) Không tự tải lại trang ở lần mở đầu tiên trên máy mới. (5) **Phiên bị thu hồi/hết hạn** → về màn đăng nhập kèm lời nhắc rõ ràng (trước đây vẫn ở màn xem sổ rồi báo "không tìm thấy khách hàng"). (6) **Mã KH bị chủ vựa đổi/xoá, hoặc đổi mật khẩu quản trị** → lần làm mới kế tiếp tự về màn nhập mã kèm thông báo, không còn hiện sổ cũ. (7) Khớp tên khách **không phân biệt hoa/thường, khoảng trắng thừa** (giống app máy chủ) — không sót giao dịch khi tên gõ lệch. (8) Thoát ký tự HTML cho tên, nội dung ứng tiền, thông tin liên hệ, danh sách mã đã nhập. (9) Mở lại app từ nền là làm mới ngay. (10) Cố định phiên bản thư viện Supabase (`supabase-js@2.117.3`). |
 | **v1.30** | 2026-10-27 | 🔒 **Tách dữ liệu khỏi các app khác cùng tên miền**: Service Worker chỉ xoá cache `xem-so-kh-` của chính app (trước đây xoá hết, làm mất bản offline của Mủ Cao Su, Quản Lý Heo...); phiên đăng nhập Supabase lưu ở khoá riêng `xskh-sb-auth` (trước đây dùng chung với app Mủ Cao Su và Khai Thuế nên đăng xuất ở 1 app là văng cả app kia). Cần đăng nhập lại 1 lần |
 | **v1.29** | 2026-09-16 | 🔧 **Khắc phục popup "Xem lại bản cập nhật biểu tượng"** (cùng nguyên nhân đã fix ở app chính v2.4.1): thêm `"id": "./"` vào `manifest.json` để Chrome 144+ nhận diện đúng app đã cài và không tải icon về so sánh pixel nữa. Đồng thời bỏ số phiên bản ra khỏi `name` và `description` trong manifest (trước đây ghi `"name": "Sổ Khách Hàng v1.28 - Mua Bán Mủ Cao Su"` và `"description": "... v1.28"` — đây là nguyên nhân khiến Chrome coi manifest thay đổi mỗi lần cập nhật app, góp phần kích hoạt popup). Từ bản này manifest ổn định hoàn toàn, không cần đụng đến khi bump version |

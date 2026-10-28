@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<title>Sổ Khách Hàng v1.32</title>
+<title>Sổ Khách Hàng v1.33</title>
 <meta name="theme-color" content="#1a472a">
 <meta name="format-detection" content="telephone=no,email=no,address=no">
 <meta name="mobile-web-app-capable" content="yes">
@@ -118,7 +118,7 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
     <div class="header-brand">
       <img src="icon-192.png" alt="Logo" class="header-icon">
       <div class="header-text">
-        <div class="header-title">Sổ Khách Hàng <span class="header-ver" id="app-ver">v1.32</span></div>
+        <div class="header-title">Sổ Khách Hàng <span class="header-ver" id="app-ver">v1.33</span></div>
         <div class="header-sub" id="header-sub">Mua Bán Mủ Cao Su — dành cho người bán tra cứu sổ sách của mình</div>
       </div>
     </div>
@@ -747,15 +747,23 @@ function sortMoiNhat(a,b){
 
 // Gọi hàm trên Supabase bằng khoá công khai (anon) — không cần đăng nhập. Hàm tự kiểm tra mã + mật khẩu.
 function goiHamSupabase(ten, thamSo){
+  // Quá 20 giây chưa có phản hồi (mạng chập chờn) → báo lỗi để người dùng thử lại, không treo nút "Đang xử lý"
+  var ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  var hen = ctl ? setTimeout(function(){ ctl.abort(); }, 20000) : null;
   return fetch(SB_URL + '/rest/v1/rpc/' + ten, {
+    signal: ctl ? ctl.signal : undefined,
     method: 'POST',
     headers: { 'apikey': SB_ANON_KEY, 'Authorization': 'Bearer ' + SB_ANON_KEY, 'Content-Type': 'application/json' },
     body: JSON.stringify(thamSo)
   }).then(function(r){
+    clearTimeout(hen);
     return r.json().then(function(j){
       if (!r.ok) throw new Error((j && (j.message || j.hint)) || ('Lỗi máy chủ ' + r.status));
       return j;
     });
+  }, function(e){
+    clearTimeout(hen);
+    throw (e && e.name === 'AbortError') ? new Error('Mạng chậm, quá thời gian chờ — kiểm tra kết nối rồi thử lại') : e;
   });
 }
 // Tải sổ theo mã + mật khẩu. cb(data) khi đúng; errCb(loi, phut) với loi = 'sai' | 'khoa' | thông báo lỗi mạng

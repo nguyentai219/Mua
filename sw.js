@@ -1,4 +1,4 @@
-const CACHE = 'xem-so-kh-v1.32';
+const CACHE = 'xem-so-kh-v1.33';
 // Dùng scope của chính service worker để tự suy ra đường dẫn — không phụ thuộc tên thư mục deploy cụ thể
 const BASE = self.registration.scope; // VD: https://nguyentai219.github.io/XemSoKhachHang/
 const FILES = [
@@ -45,18 +45,23 @@ self.addEventListener('fetch', e => {
   // nhật biểu tượng"); mất mạng thì dùng bản đã lưu.
   const networkFirst = isHTML || url.pathname.endsWith('.png') || url.pathname.endsWith('manifest.json');
   if (networkFirst) {
+    const daLuu = () => caches.match(e.request).then(r => r || (isHTML
+      ? caches.match(BASE + 'index.html', { ignoreSearch: true })
+      : undefined));
+    const mang = fetch(new Request(e.request.url, { cache: 'no-cache' }))
+      .then(response => {
+        if (response && response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone)).catch(() => {});
+        }
+        return response;
+      });
+    // Mạng chập chờn (đang tải mãi không xong) → sau 4 giây dùng bản đã lưu để app mở ra ngay, thay vì đứng
+    // mãi ở màn hình logo khởi động; bản mới vẫn tiếp tục tải ngầm và dùng ở lần mở sau.
+    const hetGio = new Promise(res => setTimeout(res, 4000)).then(daLuu).then(r => r || mang);
     e.respondWith(
-      fetch(new Request(e.request.url, { cache: 'no-cache' }))
-        .then(response => {
-          if (response && response.ok) {
-            const clone = response.clone();
-            caches.open(CACHE).then(c => c.put(e.request, clone));
-          }
-          return response;
-        })
-        .catch(() => caches.match(e.request).then(r => r || (isHTML
-          ? caches.match(BASE + 'index.html', { ignoreSearch: true })
-          : Response.error())))
+      Promise.race([mang, hetGio])
+        .catch(() => daLuu().then(r => r || Response.error()))
     );
   } else {
     e.respondWith(

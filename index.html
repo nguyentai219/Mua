@@ -407,8 +407,8 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
 // SỔ KHÁCH HÀNG — app đồng hành (máy khách) của "Mua Bán Mủ Cao Su"
 // Dành cho NGƯỜI BÁN mủ tra cứu sổ Thu Mua/Gửi/Ứng của riêng mình.
 // Từ v1.32: KHÔNG đăng nhập Supabase trên máy khách. Nhập Mã KH + Mật khẩu xem sổ (chủ vựa cấp trong app
-// máy chủ) → gọi hàm xem_so_khach trên Supabase, máy chủ kiểm tra rồi CHỈ trả về sổ của đúng khách đó.
-// Chủ vựa: email tài khoản Supabase + mật khẩu quản trị → hàm xem_so_admin → xem từng khách hoặc tất cả.
+// máy chủ) → gọi hàm sokh_xem_khach trên Supabase, máy chủ kiểm tra rồi CHỈ trả về sổ của đúng khách đó.
+// Chủ vựa: email tài khoản Supabase + mật khẩu quản trị → hàm sokh_xem_admin → xem từng khách hoặc tất cả.
 // Mã + mật khẩu đã nhập đúng được LƯU LẠI trên máy, mở app là vào thẳng sổ.
 // ============================================================
 
@@ -761,7 +761,7 @@ function goiHamSupabase(ten, thamSo){
 // Tải sổ theo mã + mật khẩu. cb(data) khi đúng; errCb(loi, phut) với loi = 'sai' | 'khoa' | thông báo lỗi mạng
 function fetchAllData(ma, mk, cb, errCb){
   var admin = laEmail(ma);
-  goiHamSupabase(admin ? 'xem_so_admin' : 'xem_so_khach', admin ? { p_email: ma, p_mk: mk } : { p_ma: ma, p_mk: mk }).then(function(res){
+  goiHamSupabase(admin ? 'sokh_xem_admin' : 'sokh_xem_khach', admin ? { p_email: ma, p_mk: mk } : { p_ma: ma, p_mk: mk }).then(function(res){
     if (!res || res.loi) { errCb && errCb(res ? res.loi : 'sai', res && res.phut); return; }
     var arr = function(v){ return Array.isArray(v) ? v : []; };
     var obj = function(v){ return (v && typeof v === 'object' && !Array.isArray(v)) ? v : {}; };

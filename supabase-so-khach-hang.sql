@@ -2,9 +2,9 @@
 -- SỔ KHÁCH HÀNG — xem sổ bằng Mã KH + mật khẩu, KHÔNG cần đăng nhập Supabase trên máy khách
 -- Chạy 1 lần trong Supabase → SQL Editor → New query → dán toàn bộ → Run. Chạy lại nhiều lần không sao.
 --
--- • xem_so_khach(ma, mk): đúng Mã KH + mật khẩu xem sổ (app Mủ Cao Su cấp, lưu ở khoá 'kh_pw') → trả về
+-- • sokh_xem_khach(ma, mk): đúng Mã KH + mật khẩu xem sổ (app Mủ Cao Su cấp, lưu ở khoá 'kh_pw') → trả về
 --   CHỈ sổ của đúng khách đó (Thu Mua, Bán, Gửi sổ, Ứng tiền, Chấm công, liên hệ, mốc chốt).
--- • xem_so_admin(email, mk): email tài khoản Supabase của chủ vựa + mật khẩu quản trị (khoá 'admin_pw')
+-- • sokh_xem_admin(email, mk): email tài khoản Supabase của chủ vựa + mật khẩu quản trị (khoá 'admin_pw')
 --   → trả về sổ của TẤT CẢ khách của chủ vựa đó.
 -- • Sai 5 lần liên tiếp → khoá mã/tài khoản đó 15 phút (chống dò mật khẩu).
 -- Hàm chạy với quyền chủ (security definer) nên đọc được bảng mucaosu_data, nhưng chỉ trả ra đúng phần
@@ -12,12 +12,12 @@
 -- ═══════════════════════════════════════════════════════════════════════════════════════════════
 
 -- Đếm số lần nhập sai (không ai đọc trực tiếp được: bật RLS, không có policy)
-create table if not exists public.so_kh_dang_nhap_sai (
+create table if not exists public.sokh_dang_nhap_sai (
   khoa      text primary key,
   so_lan    int not null default 0,
   khoa_den  timestamptz
 );
-alter table public.so_kh_dang_nhap_sai enable row level security;
+alter table public.sokh_dang_nhap_sai enable row level security;
 
 -- Chuẩn hoá tên: bỏ khoảng trắng thừa, không phân biệt hoa/thường (giống normTen trong app)
 create or replace function public._sokh_norm(t text) returns text
@@ -48,15 +48,15 @@ $$;
 create or replace function public._sokh_ghi_sai(p_khoa text) returns void
 language plpgsql security definer set search_path = public as $$
 begin
-  insert into public.so_kh_dang_nhap_sai (khoa, so_lan, khoa_den) values (p_khoa, 1, null)
+  insert into public.sokh_dang_nhap_sai (khoa, so_lan, khoa_den) values (p_khoa, 1, null)
   on conflict (khoa) do update
-    set so_lan = case when public.so_kh_dang_nhap_sai.khoa_den is not null
-                       and public.so_kh_dang_nhap_sai.khoa_den <= now() then 1
-                      else public.so_kh_dang_nhap_sai.so_lan + 1 end,
-        khoa_den = case when public.so_kh_dang_nhap_sai.khoa_den is not null
-                         and public.so_kh_dang_nhap_sai.khoa_den <= now() then null
-                        else public.so_kh_dang_nhap_sai.khoa_den end;
-  update public.so_kh_dang_nhap_sai set khoa_den = now() + interval '15 minutes', so_lan = 0
+    set so_lan = case when public.sokh_dang_nhap_sai.khoa_den is not null
+                       and public.sokh_dang_nhap_sai.khoa_den <= now() then 1
+                      else public.sokh_dang_nhap_sai.so_lan + 1 end,
+        khoa_den = case when public.sokh_dang_nhap_sai.khoa_den is not null
+                         and public.sokh_dang_nhap_sai.khoa_den <= now() then null
+                        else public.sokh_dang_nhap_sai.khoa_den end;
+  update public.sokh_dang_nhap_sai set khoa_den = now() + interval '15 minutes', so_lan = 0
   where khoa = p_khoa and so_lan >= 5;
 end $$;
 
@@ -65,12 +65,12 @@ create or replace function public._sokh_con_khoa(p_khoa text) returns int
 language sql stable security definer set search_path = public as $$
   select coalesce((
     select greatest(1, ceil(extract(epoch from (khoa_den - now())) / 60)::int)
-    from public.so_kh_dang_nhap_sai where khoa = p_khoa and khoa_den is not null and khoa_den > now()
+    from public.sokh_dang_nhap_sai where khoa = p_khoa and khoa_den is not null and khoa_den > now()
   ), 0)
 $$;
 
 -- ── KHÁCH HÀNG: Mã KH + mật khẩu ──
-create or replace function public.xem_so_khach(p_ma text, p_mk text) returns jsonb
+create or replace function public.sokh_xem_khach(p_ma text, p_mk text) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare
   v_khoa text := 'kh:' || coalesce(btrim(p_ma), '');
@@ -101,7 +101,7 @@ begin
     perform public._sokh_ghi_sai(v_khoa);
     return jsonb_build_object('loi', 'sai');
   end if;
-  delete from public.so_kh_dang_nhap_sai where khoa = v_khoa;
+  delete from public.sokh_dang_nhap_sai where khoa = v_khoa;
 
   select e.value into v_info
   from jsonb_each(case when jsonb_typeof(public._sokh_lay(v_uid, 'kh_info')) = 'object' then public._sokh_lay(v_uid, 'kh_info') else '{}'::jsonb end) e
@@ -123,7 +123,7 @@ begin
 end $$;
 
 -- ── CHỦ VỰA (quản trị): email tài khoản Supabase + mật khẩu quản trị ──
-create or replace function public.xem_so_admin(p_email text, p_mk text) returns jsonb
+create or replace function public.sokh_xem_admin(p_email text, p_mk text) returns jsonb
 language plpgsql security definer set search_path = public, auth as $$
 declare
   v_khoa text := 'ad:' || lower(btrim(coalesce(p_email, '')));
@@ -142,7 +142,7 @@ begin
     perform public._sokh_ghi_sai(v_khoa);
     return jsonb_build_object('loi', 'sai');
   end if;
-  delete from public.so_kh_dang_nhap_sai where khoa = v_khoa;
+  delete from public.sokh_dang_nhap_sai where khoa = v_khoa;
 
   return jsonb_build_object(
     'admin', true,
@@ -157,12 +157,12 @@ begin
   );
 end $$;
 
--- Quyền: chỉ 2 hàm xem_so_* được gọi từ app; các hàm phụ (_sokh_*) không ai gọi trực tiếp được
+-- Quyền: chỉ 2 hàm sokh_xem_* được gọi từ app; các hàm phụ (_sokh_*) không ai gọi trực tiếp được
 revoke all on function public._sokh_lay(uuid, text) from public, anon, authenticated;
 revoke all on function public._sokh_loc(uuid, text, text) from public, anon, authenticated;
 revoke all on function public._sokh_ghi_sai(text) from public, anon, authenticated;
 revoke all on function public._sokh_con_khoa(text) from public, anon, authenticated;
-revoke all on function public.xem_so_khach(text, text) from public;
-revoke all on function public.xem_so_admin(text, text) from public;
-grant execute on function public.xem_so_khach(text, text) to anon, authenticated;
-grant execute on function public.xem_so_admin(text, text) to anon, authenticated;
+revoke all on function public.sokh_xem_khach(text, text) from public;
+revoke all on function public.sokh_xem_admin(text, text) from public;
+grant execute on function public.sokh_xem_khach(text, text) to anon, authenticated;
+grant execute on function public.sokh_xem_admin(text, text) to anon, authenticated;

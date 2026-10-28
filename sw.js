@@ -1,4 +1,4 @@
-const CACHE = 'xem-so-kh-v1.30';
+const CACHE = 'xem-so-kh-v1.31';
 // Dùng scope của chính service worker để tự suy ra đường dẫn — không phụ thuộc tên thư mục deploy cụ thể
 const BASE = self.registration.scope; // VD: https://nguyentai219.github.io/XemSoKhachHang/
 const FILES = [
@@ -12,40 +12,55 @@ const FILES = [
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).catch(()=>{}));
+  // Tải với cache:'reload' (bỏ qua bộ nhớ đệm HTTP 10 phút của GitHub Pages) để bản mới không bị nhét
+  // nhầm index.html CŨ vào cache. Từng file riêng lẻ: 1 file lỗi không làm hỏng cả lượt cài.
+  e.waitUntil(
+    caches.open(CACHE).then(c => Promise.all(FILES.map(u =>
+      fetch(new Request(u, { cache: 'reload' })).then(r => { if (r && r.ok) return c.put(u, r); }).catch(() => {})
+    ))).catch(() => {})
+  );
   self.skipWaiting();
 });
 
-// Chỉ xoá cache CŨ CỦA APP NÀY (tiền tố riêng) — bộ nhớ cache dùng chung cả tên miền
-// nguyentai219.github.io, xoá hết sẽ làm mất bản offline của các app khác (Mủ Cao Su, Quản Lý Heo...).
 self.addEventListener('activate', e => {
+  // Chỉ xoá cache CŨ CỦA APP NÀY (tiền tố riêng) — bộ nhớ cache dùng chung cả tên miền
+  // nguyentai219.github.io, xoá hết sẽ làm mất bản offline của các app khác (Mủ Cao Su, Quản Lý Heo...).
   e.waitUntil(
     caches.keys().then(ks =>
       Promise.all(ks.filter(k => (k.startsWith('xem-so-kh-')) && k !== CACHE).map(k => caches.delete(k)))
-    )
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
-  const isHTML = e.request.destination === 'document' || url.pathname.endsWith('.html') || url.pathname.endsWith('/');
+  // CHỈ xử lý request GET cùng gốc với app. Request ra ngoài (Supabase: đăng nhập, tải sổ...) để trình duyệt
+  // tự xử lý — trước đây request Supabase lỡ lỗi mạng bị trả nhầm trang index.html đã lưu thay vì báo lỗi.
+  if (url.origin !== self.location.origin || e.request.method !== 'GET') return;
+  if (!url.href.startsWith(BASE)) return; // chỉ tài nguyên của app này, không đụng app khác cùng tên miền
 
-  if (isHTML) {
-    // HTML: Network First — luôn lấy bản mới nhất, cache làm dự phòng offline
+  const isHTML = e.request.mode === 'navigate' || e.request.destination === 'document' || url.pathname.endsWith('.html') || url.pathname.endsWith('/');
+  // Trang, icon, manifest: lấy mạng trước (cache:'no-cache' = luôn hỏi lại máy chủ, không dùng bản 10 phút
+  // trong bộ nhớ đệm HTTP) để bản mới hiện ngay và Chrome so icon đúng với máy chủ (không hiện popup "cập
+  // nhật biểu tượng"); mất mạng thì dùng bản đã lưu.
+  const networkFirst = isHTML || url.pathname.endsWith('.png') || url.pathname.endsWith('manifest.json');
+  if (networkFirst) {
     e.respondWith(
-      fetch(e.request)
+      fetch(new Request(e.request.url, { cache: 'no-cache' }))
         .then(response => {
-          const clone = response.clone();
-          caches.open(CACHE).then(c => c.put(e.request, clone));
+          if (response && response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE).then(c => c.put(e.request, clone));
+          }
           return response;
         })
-        .catch(() => caches.match(e.request))
+        .catch(() => caches.match(e.request).then(r => r || (isHTML
+          ? caches.match(BASE + 'index.html', { ignoreSearch: true })
+          : Response.error())))
     );
   } else {
-    // Tài nguyên tĩnh (icon, manifest): Cache First — nhanh hơn
     e.respondWith(
-      caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match(BASE + 'index.html')))
+      caches.match(e.request).then(r => r || fetch(e.request))
     );
   }
 });

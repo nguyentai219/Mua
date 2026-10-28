@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<title>Sổ Khách Hàng v1.30</title>
+<title>Sổ Khách Hàng v1.31</title>
 <meta name="theme-color" content="#1a472a">
 <meta name="format-detection" content="telephone=no,email=no,address=no">
 <meta name="mobile-web-app-capable" content="yes">
@@ -117,7 +117,7 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
     <div class="header-brand">
       <img src="icon-192.png" alt="Logo" class="header-icon">
       <div class="header-text">
-        <div class="header-title">Sổ Khách Hàng <span class="header-ver" id="app-ver">v1.30</span></div>
+        <div class="header-title">Sổ Khách Hàng <span class="header-ver" id="app-ver">v1.31</span></div>
         <div class="header-sub" id="header-sub">Mua Bán Mủ Cao Su — dành cho người bán tra cứu sổ sách của mình</div>
       </div>
     </div>
@@ -148,7 +148,7 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
         <label class="fl" style="margin-bottom:0">Mã khách hàng</label>
         <button type="button" id="btn-code-history" onclick="openCodeHistory()" style="display:none;background:none;border:none;color:var(--gd);font-family:'Be Vietnam Pro',sans-serif;font-size:12px;font-weight:700;cursor:pointer;padding:2px 0">🕘 Các mã đã nhập</button>
       </div>
-      <input type="text" inputmode="numeric" pattern="[0-9]*" id="lookup-id" class="fi fi-id" placeholder="12345" maxlength="5" autocomplete="off" onkeydown="if(event.key==='Enter')traCuu()">
+      <input type="text" inputmode="numeric" pattern="[0-9]*" id="lookup-id" class="fi fi-id" placeholder="12345" maxlength="20" autocomplete="off" onkeydown="if(event.key==='Enter')traCuu()">
       <div class="err" id="lookup-err"></div>
       <button class="btn btn-main" id="btn-lookup" onclick="traCuu()">🔍 Xem sổ của tôi</button>
     </div>
@@ -416,7 +416,7 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
 
 <div class="toast" id="toast"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js" defer></script>
 <script>
 // ============================================================
 // XEM SỔ KHÁCH HÀNG v1.1 — app đồng hành (máy khách) của "Mua Bán Mủ Cao Su"
@@ -476,6 +476,13 @@ function _resetDateFilterToAll(){
   _saveDateFilter();
 }
 
+// Thoát ký tự HTML cho mọi chữ lấy từ dữ liệu (tên, nội dung ứng, địa chỉ...) trước khi đưa vào innerHTML —
+// tên có dấu < > & " sẽ không làm vỡ giao diện.
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
 function toast(msg){
   var t = document.getElementById('toast');
   t.textContent = msg;
@@ -603,9 +610,9 @@ function openCodeHistory(){
     box.innerHTML = '<div style="font-size:13px;color:var(--g500);text-align:center;padding:10px 0">Chưa có mã nào được nhập trên máy này.</div>';
   } else {
     box.innerHTML = list.map(function(e){
-      return '<div onclick="selectCodeFromHistory(&quot;'+e.id+'&quot;)" style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--g50,#f7f7f7);border-radius:10px;padding:10px 12px;margin-bottom:6px;cursor:pointer">'
-        + '<div style="font-weight:700;font-size:13px;color:var(--g800,#222);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">👤 '+e.ten+'</div>'
-        + '<div style="font-size:15px;font-weight:800;color:var(--gd);letter-spacing:1px;flex:0 0 auto">'+e.id+'</div>'
+      return '<div onclick="selectCodeFromHistory(&quot;'+esc(String(e.id).replace(/[^0-9A-Za-z]/g,''))+'&quot;)" style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--g50,#f7f7f7);border-radius:10px;padding:10px 12px;margin-bottom:6px;cursor:pointer">'
+        + '<div style="font-weight:700;font-size:13px;color:var(--g800,#222);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">👤 '+esc(e.ten)+'</div>'
+        + '<div style="font-size:15px;font-weight:800;color:var(--gd);letter-spacing:1px;flex:0 0 auto">'+esc(e.id)+'</div>'
         + '</div>';
     }).join('');
   }
@@ -634,18 +641,36 @@ function silentRefresh(){
   if (!document.getElementById('scr-data').classList.contains('active')) return; // chỉ làm mới khi đang xem sổ
   fetchAllData(function(data){
     lastData = data;
+    var savedCode = localStorage.getItem(CODE_KEY);
     if (isAdminMode) {
+      // Chủ vựa đã đổi mật khẩu quản trị → thoát chế độ quản trị trên máy này
+      var adminPw = String(data.adminPw != null ? data.adminPw : ADMIN_PW_FALLBACK).trim();
+      if (savedCode !== adminPw) { _veManNhapMa('🔒 Mã quản trị đã thay đổi, vui lòng nhập lại.'); return; }
       renderAdminHome(data);
     } else {
-      var savedCode = localStorage.getItem(CODE_KEY);
       if (!savedCode) return;
       var idUpper = savedCode.toUpperCase();
       var ten = null;
       for (var t in data.khIds) { if (String(data.khIds[t]||'').toUpperCase() === idUpper) { ten = t; break; } }
-      if (ten) renderCustomerData(ten, idUpper, data);
+      // Chủ vựa đổi/xoá Mã KH này → không tiếp tục hiện sổ cũ
+      if (!ten) { _veManNhapMa('⚠️ Mã khách hàng ' + savedCode + ' không còn hiệu lực. Liên hệ chủ vựa để lấy mã mới.'); return; }
+      renderCustomerData(ten, idUpper, data);
     }
   }, function(){ /* lỗi mạng tạm thời: bỏ qua, thử lại ở lượt sau */ });
 }
+function _veManNhapMa(msg){
+  localStorage.removeItem(CODE_KEY);
+  localStorage.removeItem(ADMIN_SEL_KEY);
+  isAdminMode = false;
+  document.getElementById('lookup-id').value = '';
+  var errEl = document.getElementById('lookup-err');
+  errEl.textContent = msg; errEl.style.display = 'block';
+  showScreen('lookup');
+}
+// Mở lại app (từ nền) → làm mới ngay, không đợi tới lượt 15 giây
+document.addEventListener('visibilitychange', function(){
+  if (document.visibilityState === 'visible') { try { silentRefresh(); } catch(e){} }
+});
 function onSwitchCode(){
   closeSettings();
   localStorage.removeItem(CODE_KEY);
@@ -655,10 +680,13 @@ function onSwitchCode(){
   document.getElementById('lookup-err').style.display = 'none';
   showScreen('lookup');
 }
+var _dangDangXuat = false; // đăng xuất chủ động → không hiện lời nhắc "phiên hết hạn"
 function doLogout(){
   closeSettings();
   if (!sbClient) return;
+  _dangDangXuat = true;
   sbClient.auth.signOut().then(function(){
+    _dangDangXuat = false;
     sbUser = null;
     isAdminMode = false;
     localStorage.removeItem(CODE_KEY);
@@ -671,11 +699,41 @@ function doLogout(){
   });
 }
 
+// Khoá lưu phiên đăng nhập RIÊNG của app (từ v1.30). Bản v1.29 trở về trước lưu ở khoá mặc định
+// 'sb-<project>-auth-token' — bản v1.30 đổi khoá mà KHÔNG chuyển phiên cũ sang, khiến mọi máy khách hàng bị
+// đăng xuất (khách không biết mật khẩu Supabase để tự đăng nhập lại). Hàm này CHUYỂN (chép rồi xoá khoá cũ)
+// phiên cũ sang khoá mới đúng 1 lần nếu khoá mới chưa có. Xoá khoá cũ để không có 2 app cùng dùng 1 phiên
+// (Supabase sẽ thu hồi cả phiên nếu 2 nơi cùng làm mới 1 refresh token).
+var SB_STORAGE_KEY = 'xskh-sb-auth';
+var SB_OLD_STORAGE_KEY = 'sb-tfxtxtwfeepxgzbxtafv-auth-token';
+function _chuyenPhienCu(){
+  try {
+    if (localStorage.getItem(SB_STORAGE_KEY)) return;
+    var cu = localStorage.getItem(SB_OLD_STORAGE_KEY);
+    if (!cu) return;
+    localStorage.setItem(SB_STORAGE_KEY, cu);
+    localStorage.removeItem(SB_OLD_STORAGE_KEY);
+  } catch(e) {}
+}
 function initSupabase(){
   if (typeof window.supabase === 'undefined') { setTimeout(initSupabase, 400); return; }
   // Phiên đăng nhập lưu ở khoá riêng của app: app Mủ Cao Su và Khai Thuế dùng chung project Supabase này,
   // nếu cùng khoá mặc định 'sb-<project>-auth-token' thì đăng xuất ở app này sẽ đăng xuất luôn app kia.
-  sbClient = window.supabase.createClient(SB_URL, SB_ANON_KEY, { auth: { storageKey: 'xskh-sb-auth' } });
+  _chuyenPhienCu();
+  sbClient = window.supabase.createClient(SB_URL, SB_ANON_KEY, { auth: { storageKey: SB_STORAGE_KEY } });
+  // Phiên bị thu hồi / hết hạn không làm mới được (VD chủ vựa đổi mật khẩu tài khoản) → về màn đăng nhập
+  // với lời nhắc rõ ràng, thay vì vẫn ở màn xem sổ rồi báo "không tìm thấy khách hàng" khó hiểu.
+  sbClient.auth.onAuthStateChange(function(event, session){
+    if (event === 'SIGNED_OUT' || (!session && sbUser)) {
+      if (!sbUser || _dangDangXuat) return;
+      sbUser = null;
+      showScreen('login');
+      var errEl = document.getElementById('login-err');
+      if (errEl) { errEl.textContent = '⚠️ Phiên đăng nhập đã hết hạn — nhờ chủ vựa đăng nhập lại giúp. Mã khách hàng đã lưu sẽ tự mở lại.'; errEl.style.display = 'block'; }
+    } else if (session && session.user) {
+      sbUser = session.user;
+    }
+  });
   sbClient.auth.getSession().then(function(res){
     var session = res.data && res.data.session;
     if (session && session.user) {
@@ -814,8 +872,7 @@ function renderAdminHome(data){
   var names = Object.keys(data.khIds||{}).sort(function(a,b){ return a.localeCompare(b,'vi'); });
   var savedSel = localStorage.getItem(ADMIN_SEL_KEY) || '';
   sel.innerHTML = '<option value="">-- Chọn người bán --</option>' + names.map(function(n){
-    var esc = n.replace(/"/g,'&quot;');
-    return '<option value="'+esc+'"'+(n===savedSel?' selected':'')+'>'+n+'</option>';
+    return '<option value="'+esc(n)+'"'+(n===savedSel?' selected':'')+'>'+esc(n)+'</option>';
   }).join('');
   if (savedSel && names.indexOf(savedSel) >= 0) {
     document.getElementById('data-empty-hint').style.display = 'none';
@@ -858,7 +915,7 @@ function rowsToTable(rows, cols, footLabel, footKey){
       body += '<tr><td colspan="' + cols.length + '" class="date-group-row">📅 ' + fmtDateSmart(r.date) + '</td></tr>';
     }
     body += '<tr>' + cols.map(function(c){
-      var v = c.fmt ? c.fmt(r) : (r[c.key]!=null ? r[c.key] : '');
+      var v = c.fmt ? c.fmt(r) : esc(r[c.key]!=null ? r[c.key] : '');
       return '<td>'+v+'</td>';
     }).join('') + '</tr>';
   });
@@ -891,7 +948,7 @@ function updateCustTicker(ten, khInfo){
   if (!items.length) { wrap.style.display = 'none'; wrap.innerHTML = ''; return; }
   items.unshift('Thông tin chi tiết của khách hàng');
   wrap.style.display = 'flex';
-  wrap.innerHTML = '<span class="kh-ic">🏠</span><span class="kh-val" id="cust-info-val">' + items[0] + '</span>';
+  wrap.innerHTML = '<span class="kh-ic">🏠</span><span class="kh-val" id="cust-info-val">' + esc(items[0]) + '</span>';
   var idx = 0;
   _custTickerTimer = setInterval(function(){
     idx = (idx+1) % items.length;
@@ -940,15 +997,19 @@ function renderCustomerData(ten, id, data, isAdminCall){
   }
 
   var muaChotDate = getMuaChotMocFor(data.muaChotMap||{}, ten); // chuỗi 'yyyy-mm-dd' đã chốt đến hết ngày này, hoặc '' nếu chưa chốt
-  var muaAll = (data.mua||[]).filter(function(r){ return r.ten === ten; });
+  // Khớp tên KHÔNG phân biệt hoa/thường và khoảng trắng thừa — giống app máy chủ (cùng 1 Mã KH cho các cách
+  // gõ tên khác nhau), để không sót giao dịch khi chủ vựa lỡ gõ tên lệch chữ hoa/khoảng trắng.
+  var tenN = normTen(ten);
+  function laCuaKhach(r){ return normTen(r.ten) === tenN; }
+  var muaAll = (data.mua||[]).filter(laCuaKhach);
   // Nếu chủ vựa đã "Chốt danh sách Thu Mua" đến 1 ngày cụ thể: chỉ hiện các giao dịch có NGÀY SAU ngày chốt đó
   var mua = (muaChotDate ? muaAll.filter(function(r){ return (r.date||'') > muaChotDate; }) : muaAll)
     .sort(sortMoiNhat);
   var muaSoAn = muaChotDate ? (muaAll.length - mua.length) : 0;
-  var ban = (data.ban||[]).filter(function(r){ return r.ten === ten; }).sort(sortMoiNhat);
-  var sg  = (data.sg||[]).filter(function(r){ return r.ten === ten; }).sort(sortMoiNhat);
-  var su  = (data.su||[]).filter(function(r){ return r.ten === ten; }).sort(sortMoiNhat);
-  var cc  = (data.cc||[]).filter(function(r){ return normTen(r.ten) === normTen(ten); }).sort(sortMoiNhat);
+  var ban = (data.ban||[]).filter(laCuaKhach).sort(sortMoiNhat);
+  var sg  = (data.sg||[]).filter(laCuaKhach).sort(sortMoiNhat);
+  var su  = (data.su||[]).filter(laCuaKhach).sort(sortMoiNhat);
+  var cc  = (data.cc||[]).filter(laCuaKhach).sort(sortMoiNhat);
 
   // Người chỉ có sổ Chấm Công (công nhân), không phải khách hàng mua/bán/gửi/ứng -> ẩn hẳn các thẻ không liên quan
   var isCongNhanOnly = (muaAll.length===0 && ban.length===0 && sg.length===0 && su.length===0 && cc.length>0);
@@ -1124,8 +1185,11 @@ setupAutoRefresh();
 // Đăng ký Service Worker (offline shell) + chủ động kiểm tra bản mới, tránh app đứng yên ở bản cũ
 if ('serviceWorker' in navigator) {
   var _swUpdReloaded = false;
+  // Lần mở đầu tiên trên máy (chưa có SW cũ) thì clients.claim() cũng phát sinh controllerchange — không phải
+  // bản mới nên KHÔNG tải lại (tránh mất chữ đang gõ ở màn đăng nhập).
+  var _swHadController = !!navigator.serviceWorker.controller;
   function _swAutoReload(){
-    if (_swUpdReloaded) return;
+    if (_swUpdReloaded || !_swHadController) return;
     _swUpdReloaded = true;
     location.reload(); // tự động tải lại ngay khi có bản mới, không cần chờ nhấn thông báo
   }

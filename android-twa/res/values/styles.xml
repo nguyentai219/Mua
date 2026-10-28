@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Màn chờ trong lúc mở trình duyệt: nền màu app + logo ở giữa (giống background_color trong manifest.json) -->
+    <style name="Splash" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@drawable/splash</item>
+        <item name="android:statusBarColor">#1a472a</item>
+        <item name="android:navigationBarColor">#1a472a</item>
+    </style>
+</resources>

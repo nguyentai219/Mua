@@ -151,6 +151,50 @@ begin
     'sg',  public._sokh_loc(v_uid, 'sg3', null),
     'su',  public._sokh_loc(v_uid, 'su_data', null),
     'cc',  public._sokh_loc(v_uid, 'cc_data', null),
+    'ss',  coalesce(public._sokh_lay(v_uid, 'ss_data'), '{}'::jsonb),
+    'kh_ids',   coalesce(public._sokh_lay(v_uid, 'kh_ids'), '{}'::jsonb),
+    'kh_info',  coalesce(public._sokh_lay(v_uid, 'kh_info'), '{}'::jsonb),
+    'mua_chot', coalesce(public._sokh_lay(v_uid, 'mua_chot_moc'), '{}'::jsonb)
+  );
+end $$;
+
+-- ── MÃ CƠ SỞ THU MUA: mã 7 số + mật khẩu (app Mủ Cao Su cấp, lưu ở khoá 'co_so_xem') → toàn bộ sổ của cơ sở ──
+create or replace function public.sokh_xem_coso(p_ma text, p_mk text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_khoa text := 'cs:' || coalesce(btrim(p_ma), '');
+  v_phut int;
+  r record;
+  v_uid uuid;
+begin
+  v_phut := public._sokh_con_khoa(v_khoa);
+  if v_phut > 0 then return jsonb_build_object('loi', 'khoa', 'phut', v_phut); end if;
+
+  for r in
+    select m.user_id, m.data_value::jsonb as v
+    from public.mucaosu_data m
+    where m.data_key = 'co_so_xem' and jsonb_typeof(m.data_value::jsonb) = 'object'
+      and m.data_value::jsonb ->> 'ma' = btrim(p_ma)
+  loop
+    if coalesce(r.v ->> 'mk', '') <> '' and r.v ->> 'mk' = btrim(coalesce(p_mk, '')) then
+      v_uid := r.user_id; exit;
+    end if;
+  end loop;
+
+  if v_uid is null then
+    perform public._sokh_ghi_sai(v_khoa);
+    return jsonb_build_object('loi', 'sai');
+  end if;
+  delete from public.sokh_dang_nhap_sai where khoa = v_khoa;
+
+  return jsonb_build_object(
+    'admin', true, 'co_so', true,
+    'mua', public._sokh_loc(v_uid, 'gd3_mua', null),
+    'ban', public._sokh_loc(v_uid, 'gd3_ban', null),
+    'sg',  public._sokh_loc(v_uid, 'sg3', null),
+    'su',  public._sokh_loc(v_uid, 'su_data', null),
+    'cc',  public._sokh_loc(v_uid, 'cc_data', null),
+    'ss',  coalesce(public._sokh_lay(v_uid, 'ss_data'), '{}'::jsonb),
     'kh_ids',   coalesce(public._sokh_lay(v_uid, 'kh_ids'), '{}'::jsonb),
     'kh_info',  coalesce(public._sokh_lay(v_uid, 'kh_info'), '{}'::jsonb),
     'mua_chot', coalesce(public._sokh_lay(v_uid, 'mua_chot_moc'), '{}'::jsonb)
@@ -164,5 +208,7 @@ revoke all on function public._sokh_ghi_sai(text) from public, anon, authenticat
 revoke all on function public._sokh_con_khoa(text) from public, anon, authenticated;
 revoke all on function public.sokh_xem_khach(text, text) from public;
 revoke all on function public.sokh_xem_admin(text, text) from public;
+revoke all on function public.sokh_xem_coso(text, text) from public;
 grant execute on function public.sokh_xem_khach(text, text) to anon, authenticated;
 grant execute on function public.sokh_xem_admin(text, text) to anon, authenticated;
+grant execute on function public.sokh_xem_coso(text, text) to anon, authenticated;

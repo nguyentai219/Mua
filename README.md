@@ -1,4 +1,4 @@
-# Sổ Khách Hàng (v1.34)
+# Sổ Khách Hàng (v1.35)
 
 Ứng dụng đồng hành ("máy khách") của app **Mua Bán Mủ Cao Su**. Cài trên điện thoại của khách hàng bán mủ, cho phép họ tự tra cứu sổ **Thu Mua / Gửi sổ / Ứng tiền** của riêng mình — không xem được dữ liệu của khách hàng khác, và không xem được **Bán** (giao dịch bán cho vựa lớn, không liên quan tới khách hàng cá nhân).
 
@@ -43,6 +43,7 @@ nguyentai219.github.io/XemSoKhachHang/
 
 | Phiên bản | Ngày | Thay đổi |
 |---|---|---|
+| **v1.35** | 2026-11-20 | 🏪 **Mã cơ sở thu mua**: nhập **mã cơ sở (7 số) + mật khẩu** (chủ vựa lấy ở màn 👥 của app Mủ Cao Su) vào ô Mã khách hàng → xem toàn bộ sổ của cơ sở như chế độ quản trị (hàm Supabase `sokh_xem_coso`, khoá `co_so_xem`). Chế độ quản trị/mã cơ sở có thêm thẻ **🚛 Bán Ra**, **🧮 Tính Toán** (lịch sử phân bổ; xem từng khách thì lọc theo người đó) và **👥 Khách hàng** (khi chọn "Tất cả khách hàng": Tên, Mã KH, SĐT, địa chỉ). `sokh_xem_admin` trả thêm dữ liệu Tính Toán. Cần chạy lại `supabase-so-khach-hang.sql`. |
 | **v1.34** | 2026-10-29 | 🙈 **Giấu chế độ quản trị khỏi khách hàng**: bỏ nút "Chủ vựa đăng nhập quản trị" và mục hướng dẫn chế độ quản trị; chủ vựa vào bằng cách chạm 5 lần liên tiếp vào chữ "Sổ Khách Hàng" ở màn nhập mã. Ô email quản trị hiển thị chữ thường (không còn in hoa/giãn chữ). |
 | **v1.33** | 2026-10-28 | 🐢 **Không còn đứng mãi ở màn hình logo khi mạng chập chờn**: Service Worker chờ mạng tối đa 4 giây, quá thì mở bằng bản đã lưu (bản mới vẫn tải ngầm cho lần sau). Gọi máy chủ quá 20 giây thì báo lỗi "mạng chậm" để thử lại, không treo nút "Đang xử lý". |
 | **v1.32** | 2026-10-28 | 🔑 **Xem sổ bằng Mã KH + Mật khẩu, không cần đăng nhập Supabase trên máy khách**: app gọi hàm `sokh_xem_khach` trên Supabase (máy chủ kiểm tra và chỉ trả sổ của đúng khách). Chế độ quản trị mới: email tài khoản vựa + mật khẩu quản trị (hàm `sokh_xem_admin`), menu chọn từng khách hoặc **📋 Tất cả khách hàng** (có cột Tên). Sai 5 lần khoá 15 phút. Máy bản cũ: mã đã lưu được điền sẵn, chỉ cần nhập mật khẩu 1 lần; phiên Supabase cũ bị xoá khỏi máy. Chủ vựa đổi mật khẩu → máy khách tự về màn nhập. Mật khẩu mở Cài đặt = mật khẩu xem sổ. Bỏ thư viện supabase-js. Cần chạy `supabase-so-khach-hang.sql` 1 lần. |

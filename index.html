@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<title>Sổ Khách Hàng v1.34</title>
+<title>Sổ Khách Hàng v1.35</title>
 <meta name="theme-color" content="#1a472a">
 <meta name="format-detection" content="telephone=no,email=no,address=no">
 <meta name="mobile-web-app-capable" content="yes">
@@ -77,6 +77,8 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
 .sc-amber{--sc-bd:#fcd34d;--sc-bg:#fef3c7;--sc-tx:#92400e}
 .sc-red{--sc-bd:#fca5a5;--sc-bg:#fee2e2;--sc-tx:#991b1b}
 .sc-purple{--sc-bd:#c4b5fd;--sc-bg:#ede9fe;--sc-tx:#5b21b6}
+.sc-orange{--sc-bd:#fdba74;--sc-bg:#ffedd5;--sc-tx:#9a3412}
+.sc-teal{--sc-bd:#5eead4;--sc-bg:#ccfbf1;--sc-tx:#115e59}
 /* Khối tên khách hàng: tên bên trái, mã bên phải, nổi bật ngay đầu trang */
 .cust-card{display:flex;align-items:center;justify-content:space-between;gap:10px;border-radius:14px;border:2px solid var(--sc-bd);background:var(--sc-bg);padding:14px 16px;margin-bottom:14px}
 .cust-name{font-size:17px;font-weight:800;color:var(--sc-tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -118,7 +120,7 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
     <div class="header-brand">
       <img src="icon-192.png" alt="Logo" class="header-icon">
       <div class="header-text">
-        <div class="header-title" onclick="_chamTieuDe()">Sổ Khách Hàng <span class="header-ver" id="app-ver">v1.34</span></div>
+        <div class="header-title" onclick="_chamTieuDe()">Sổ Khách Hàng <span class="header-ver" id="app-ver">v1.35</span></div>
         <div class="header-sub" id="header-sub">Mua Bán Mủ Cao Su — dành cho người bán tra cứu sổ sách của mình</div>
       </div>
     </div>
@@ -200,6 +202,11 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
       </div>
     </div>
 
+    <div class="sec-card sc-orange" id="card-ban" style="display:none">
+      <div class="sec-card-title">🚛 Bán Ra <span class="cnt-badge">(<span id="cnt-ban">0</span>)</span></div>
+      <div class="sec-card-body"><div class="tbl-wrap" id="tbl-ban"></div></div>
+    </div>
+
     <div class="sec-card sc-amber" id="card-sg" style="display:none">
       <div class="sec-card-title">📒 Lịch sử Gửi sổ <span class="cnt-badge">(<span id="cnt-sg">0</span>)</span></div>
       <div class="sec-card-body"><div class="tbl-wrap" id="tbl-sg"></div></div>
@@ -216,6 +223,16 @@ td.date-group-row{background:var(--g100);font-weight:800;font-size:11px;color:va
     </div>
 
     <!-- Tổng quan: gộp số liệu chi tiết từ mọi loại sổ, đặt ở cuối cùng -->
+    <div class="sec-card sc-teal" id="card-ss" style="display:none">
+      <div class="sec-card-title">🧮 Tính Toán <span class="cnt-badge">(<span id="cnt-ss">0</span>)</span></div>
+      <div class="sec-card-body"><div class="tbl-wrap" id="tbl-ss"></div></div>
+    </div>
+
+    <div class="sec-card sc-blue" id="card-kh" style="display:none">
+      <div class="sec-card-title">👥 Khách hàng <span class="cnt-badge">(<span id="cnt-kh">0</span>)</span></div>
+      <div class="sec-card-body"><div class="tbl-wrap" id="tbl-kh"></div></div>
+    </div>
+
     <div class="sec-card sc-green" id="sum-card" style="display:none">
       <div class="sec-card-title">📊 Tổng quan</div>
       <div class="sec-card-body"><div class="sum-grid" id="sum-grid" style="margin-top:0"></div></div>
@@ -415,6 +432,10 @@ var DEFAULT_REFRESH_SEC = 15;
 var refreshTimer = null;
 
 function laEmail(s){ return /@/.test(s || ''); }
+// Mã cơ sở thu mua: 7 chữ số (Mã KH là 5 số) — chủ vựa cấp trong app Mua Bán Mủ Cao Su (màn 👥), kèm mật khẩu;
+// đăng nhập bằng mã cơ sở xem được toàn bộ sổ của cơ sở đó (giống chế độ quản trị).
+function laMaCoSo(s){ return /^\d{7}$/.test((s || '').trim()); }
+function laDangNhapQuanTri(s){ return laEmail(s) || laMaCoSo(s); }
 function maDaLuu(){ return localStorage.getItem(CODE_KEY) || ''; }
 function mkDaLuu(){ return localStorage.getItem(MK_KEY) || ''; }
 var isAdminMode = false;
@@ -627,7 +648,7 @@ function silentRefresh(){
     else renderCustomerData(data.ten, data.ma, data);
   }, function(loi){
     // Chủ vựa đổi mật khẩu xem sổ / mật khẩu quản trị, hoặc xoá mã → không tiếp tục hiện sổ cũ
-    if (loi === 'sai') _veManNhapMa(isAdminMode ? '🔒 Mật khẩu quản trị đã thay đổi, vui lòng đăng nhập lại.' : '⚠️ Mã hoặc mật khẩu xem sổ đã thay đổi. Liên hệ chủ vựa để lấy mật khẩu mới.');
+    if (loi === 'sai') _veManNhapMa(isAdminMode ? '🔒 Mật khẩu đã thay đổi, vui lòng đăng nhập lại.' : '⚠️ Mã hoặc mật khẩu xem sổ đã thay đổi. Liên hệ chủ vựa để lấy mật khẩu mới.');
     /* lỗi mạng tạm thời: bỏ qua, thử lại ở lượt sau */
   });
 }
@@ -637,7 +658,7 @@ function _veManNhapMa(msg){
   localStorage.removeItem(MK_KEY);
   localStorage.removeItem(ADMIN_SEL_KEY);
   isAdminMode = false;
-  datCheDoNhap(laAdmin);
+  datCheDoNhap(laAdmin && laEmail(ma));
   document.getElementById('lookup-id').value = ma; // giữ sẵn mã, chỉ cần nhập lại mật khẩu
   document.getElementById('lookup-mk').value = '';
   var errEl = document.getElementById('lookup-err');
@@ -705,6 +726,7 @@ function khoiDong(){
   var ma = maDaLuu(), mk = mkDaLuu();
   showScreen('lookup');
   if (ma && mk) { datCheDoNhap(laEmail(ma)); traCuu(ma, mk); return; }
+  if (ma && laMaCoSo(ma)) { document.getElementById('lookup-id').value = ma; localStorage.removeItem(CODE_KEY); return; }
   if (ma && !laEmail(ma)) {
     if (/^\d{5}$/.test(ma)) {
       document.getElementById('lookup-id').value = ma;
@@ -774,12 +796,13 @@ function goiHamSupabase(ten, thamSo){
 }
 // Tải sổ theo mã + mật khẩu. cb(data) khi đúng; errCb(loi, phut) với loi = 'sai' | 'khoa' | thông báo lỗi mạng
 function fetchAllData(ma, mk, cb, errCb){
-  var admin = laEmail(ma);
-  goiHamSupabase(admin ? 'sokh_xem_admin' : 'sokh_xem_khach', admin ? { p_email: ma, p_mk: mk } : { p_ma: ma, p_mk: mk }).then(function(res){
+  var admin = laDangNhapQuanTri(ma);
+  var ham = laEmail(ma) ? 'sokh_xem_admin' : (laMaCoSo(ma) ? 'sokh_xem_coso' : 'sokh_xem_khach');
+  goiHamSupabase(ham, laEmail(ma) ? { p_email: ma, p_mk: mk } : { p_ma: ma, p_mk: mk }).then(function(res){
     if (!res || res.loi) { errCb && errCb(res ? res.loi : 'sai', res && res.phut); return; }
     var arr = function(v){ return Array.isArray(v) ? v : []; };
     var obj = function(v){ return (v && typeof v === 'object' && !Array.isArray(v)) ? v : {}; };
-    var data = { mua: arr(res.mua), ban: arr(res.ban), sg: arr(res.sg), su: arr(res.su), cc: arr(res.cc), admin: !!res.admin };
+    var data = { mua: arr(res.mua), ban: arr(res.ban), sg: arr(res.sg), su: arr(res.su), cc: arr(res.cc), admin: !!res.admin, ss: obj(res.ss) };
     if (admin) {
       data.khIds = obj(res.kh_ids); data.khInfo = obj(res.kh_info); data.muaChotMap = obj(res.mua_chot);
     } else {
@@ -796,7 +819,7 @@ function traCuu(codeOverride, mkOverride){
   var isManualLookup = (codeOverride == null); // true = người dùng vừa bấm tra cứu/chọn mã — KHÁC với lần tự mở lại mã đã lưu lúc mở app
   var idRaw = (codeOverride != null ? codeOverride : (document.getElementById('lookup-id').value || '')).trim();
   var mk = (mkOverride != null ? mkOverride : (document.getElementById('lookup-mk').value || '')).trim();
-  var admin = laEmail(idRaw);
+  var admin = laDangNhapQuanTri(idRaw), laCoSo = laMaCoSo(idRaw);
   var errEl = document.getElementById('lookup-err');
   errEl.style.display = 'none';
   if (!idRaw) { errEl.textContent = admin || _cheDoAdminNhap ? '⚠️ Vui lòng nhập email' : '⚠️ Vui lòng nhập Mã khách hàng'; errEl.style.display = 'block'; return; }
@@ -826,8 +849,8 @@ function traCuu(codeOverride, mkOverride){
     showScreen('data');
   }, function(loi, phut){
     setBtnLoading('btn-lookup', false, '🔍 Xem sổ của tôi');
-    if (!isManualLookup && (loi === 'sai' || loi === 'khoa')) { localStorage.removeItem(MK_KEY); datCheDoNhap(admin); document.getElementById('lookup-id').value = idRaw; }
-    errEl.textContent = loi === 'sai' ? (admin ? '❌ Sai email hoặc mật khẩu quản trị.' : '❌ Sai Mã khách hàng hoặc Mật khẩu xem sổ. Kiểm tra lại hoặc hỏi chủ vựa.')
+    if (!isManualLookup && (loi === 'sai' || loi === 'khoa')) { localStorage.removeItem(MK_KEY); datCheDoNhap(laEmail(idRaw)); document.getElementById('lookup-id').value = idRaw; }
+    errEl.textContent = loi === 'sai' ? (laCoSo ? '❌ Sai mã cơ sở hoặc mật khẩu.' : admin ? '❌ Sai email hoặc mật khẩu quản trị.' : '❌ Sai Mã khách hàng hoặc Mật khẩu xem sổ. Kiểm tra lại hoặc hỏi chủ vựa.')
       : loi === 'khoa' ? ('⛔ Nhập sai quá nhiều lần — thử lại sau ' + (phut || 15) + ' phút.')
       : ('❌ Lỗi tải dữ liệu: ' + loi);
     errEl.style.display = 'block';
@@ -867,7 +890,7 @@ function onAdminSelectChange(){
 }
 function showDataCards(show){
   if (!show) {
-    ['sum-card','card-primary','card-sg','card-su','card-cc','date-filter-card'].forEach(function(id){
+    ['sum-card','card-primary','card-sg','card-su','card-cc','date-filter-card','card-ban','card-ss','card-kh'].forEach(function(id){
       document.getElementById(id).style.display = 'none';
     });
   }
@@ -1117,6 +1140,61 @@ function renderCustomerData(ten, id, data, isAdminCall){
   document.getElementById('card-cc').style.display = cc.length > 0 ? '' : 'none';
   if (cc.length > 0) {
     document.getElementById('cc-list').innerHTML = cc.map(function(r){ return renderCcCard(r, laTatCa); }).join('');
+  }
+
+  // ── Chỉ chế độ quản trị / mã cơ sở: Bán Ra, Tính Toán, danh sách Khách hàng ──
+  var laQT = !!isAdminCall;
+  // Bán Ra (khách là người mua lại hàng thì Bán Ra đã nằm ở lịch sử chính phía trên)
+  var banF = applyDateFilter(ban);
+  var hienBan = laQT && !isBuyer && ban.length > 0;
+  document.getElementById('card-ban').style.display = hienBan ? '' : 'none';
+  if (hienBan) {
+    document.getElementById('cnt-ban').textContent = banF.length;
+    document.getElementById('tbl-ban').innerHTML = rowsToTable(banF, colsGD, 'Tổng cộng', 'tt');
+  }
+  // Tính Toán (lịch sử kết quả phân bổ ở tab Tính Toán của app máy chủ)
+  var ssRows = [];
+  if (laQT) {
+    var ss = data.ss || {};
+    Object.keys(ss).forEach(function(d){
+      (Array.isArray(ss[d]) ? ss[d] : []).forEach(function(e, k){
+        if (laTatCa) {
+          ssRows.push({ id: (e.savedAt||0) + k, date: d, loai: e.loai, kg: e.totalKg, do: e.avgDo, tien: e.totalTien, gia: e.gia, n: (e.list||[]).length });
+        } else {
+          (e.list||[]).forEach(function(x, j){
+            if (normTen(x.ten) === tenN) ssRows.push({ id: (e.savedAt||0) + j, date: d, loai: e.loai, kg: x.kg, do: x.do, tien: x.tien, gia: e.gia });
+          });
+        }
+      });
+    });
+    ssRows.sort(sortMoiNhat);
+  }
+  var ssF = applyDateFilter(ssRows);
+  document.getElementById('card-ss').style.display = (laQT && ssRows.length) ? '' : 'none';
+  if (laQT && ssRows.length) {
+    var tenLoai = function(l){ return l === 'nuoc' ? 'Nước' : (DO_LOAI_LBL[l] || l || ''); };
+    var colsSS = [
+      {label:'Loại', fmt:function(r){ return esc(tenLoai(r.loai)); }},
+      {label:'KG', fmt:function(r){ return (Math.round((r.kg||0)*10)/10).toLocaleString('vi-VN'); }},
+      {label:'Độ', fmt:function(r){ return r.loai === 'nuoc' && r.do ? (Math.round(r.do*10)/10).toLocaleString('vi-VN') : ''; }},
+      {label:'Giá', fmt:function(r){ return fmtVND(r.gia); }},
+      {label:'Thành tiền', fmt:function(r){ return fmtVND(r.tien)+'đ'; }, isSum:true}
+    ];
+    if (laTatCa) colsSS.splice(1, 0, {label:'Số người', fmt:function(r){ return r.n; }});
+    document.getElementById('cnt-ss').textContent = ssF.length;
+    document.getElementById('tbl-ss').innerHTML = rowsToTable(ssF, colsSS, 'Tổng cộng', 'tien');
+  }
+  // Khách hàng (chỉ khi xem "Tất cả khách hàng")
+  var hienKh = laQT && laTatCa;
+  document.getElementById('card-kh').style.display = hienKh ? '' : 'none';
+  if (hienKh) {
+    var ten_ds = Object.keys(data.khIds || {}).sort(function(a,b){ return a.localeCompare(b,'vi'); });
+    document.getElementById('cnt-kh').textContent = ten_ds.length;
+    document.getElementById('tbl-kh').innerHTML = !ten_ds.length ? '<div class="empty">Chưa có khách hàng</div>'
+      : '<table><tr><th>Tên</th><th>Mã KH</th><th>SĐT</th><th>Địa chỉ</th></tr>' + ten_ds.map(function(t){
+          var inf = (data.khInfo || {})[normTen(t)] || {};
+          return '<tr><td style="text-align:left"><b>' + esc(t) + '</b></td><td>' + esc(data.khIds[t]) + '</td><td>' + esc(inf.sdt || '') + '</td><td style="text-align:left">' + esc(inf.diaChi || '') + '</td></tr>';
+        }).join('') + '</table>';
   }
 }
 

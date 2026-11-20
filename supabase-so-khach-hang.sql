@@ -4,7 +4,7 @@
 --
 -- • sokh_xem_khach(ma, mk): đúng Mã KH + mật khẩu xem sổ (app Mủ Cao Su cấp, lưu ở khoá 'kh_pw') → trả về
 --   CHỈ sổ của đúng khách đó (Thu Mua, Bán, Gửi sổ, Ứng tiền, Chấm công, liên hệ, mốc chốt).
--- • sokh_xem_admin(email, mk): email tài khoản Supabase của chủ vựa + mật khẩu quản trị (khoá 'admin_pw')
+-- • sokh_xem_coso(ma, mk): mã cơ sở thu mua (7 số) + mật khẩu (khoá 'co_so_xem')
 --   → trả về sổ của TẤT CẢ khách của chủ vựa đó.
 -- • Sai 5 lần liên tiếp → khoá mã/tài khoản đó 15 phút (chống dò mật khẩu).
 -- Hàm chạy với quyền chủ (security definer) nên đọc được bảng mucaosu_data, nhưng chỉ trả ra đúng phần
@@ -122,41 +122,8 @@ begin
   );
 end $$;
 
--- ── CHỦ VỰA (quản trị): email tài khoản Supabase + mật khẩu quản trị ──
-create or replace function public.sokh_xem_admin(p_email text, p_mk text) returns jsonb
-language plpgsql security definer set search_path = public, auth as $$
-declare
-  v_khoa text := 'ad:' || lower(btrim(coalesce(p_email, '')));
-  v_phut int;
-  v_uid uuid;
-  v_pw text;
-begin
-  v_phut := public._sokh_con_khoa(v_khoa);
-  if v_phut > 0 then return jsonb_build_object('loi', 'khoa', 'phut', v_phut); end if;
-
-  select u.id into v_uid from auth.users u where lower(u.email) = lower(btrim(p_email)) limit 1;
-  if v_uid is not null then
-    v_pw := coalesce(public._sokh_lay(v_uid, 'admin_pw') #>> '{}', '28082008');
-  end if;
-  if v_uid is null or v_pw is null or v_pw <> btrim(coalesce(p_mk, '')) then
-    perform public._sokh_ghi_sai(v_khoa);
-    return jsonb_build_object('loi', 'sai');
-  end if;
-  delete from public.sokh_dang_nhap_sai where khoa = v_khoa;
-
-  return jsonb_build_object(
-    'admin', true,
-    'mua', public._sokh_loc(v_uid, 'gd3_mua', null),
-    'ban', public._sokh_loc(v_uid, 'gd3_ban', null),
-    'sg',  public._sokh_loc(v_uid, 'sg3', null),
-    'su',  public._sokh_loc(v_uid, 'su_data', null),
-    'cc',  public._sokh_loc(v_uid, 'cc_data', null),
-    'ss',  coalesce(public._sokh_lay(v_uid, 'ss_data'), '{}'::jsonb),
-    'kh_ids',   coalesce(public._sokh_lay(v_uid, 'kh_ids'), '{}'::jsonb),
-    'kh_info',  coalesce(public._sokh_lay(v_uid, 'kh_info'), '{}'::jsonb),
-    'mua_chot', coalesce(public._sokh_lay(v_uid, 'mua_chot_moc'), '{}'::jsonb)
-  );
-end $$;
+-- ── (Đã bỏ từ Sổ Khách Hàng v1.36) Đăng nhập quản trị bằng email + mật khẩu quản trị — thay bằng mã cơ sở ──
+drop function if exists public.sokh_xem_admin(text, text);
 
 -- ── MÃ CƠ SỞ THU MUA: mã 7 số + mật khẩu (app Mủ Cao Su cấp, lưu ở khoá 'co_so_xem') → toàn bộ sổ của cơ sở ──
 create or replace function public.sokh_xem_coso(p_ma text, p_mk text) returns jsonb
@@ -207,8 +174,6 @@ revoke all on function public._sokh_loc(uuid, text, text) from public, anon, aut
 revoke all on function public._sokh_ghi_sai(text) from public, anon, authenticated;
 revoke all on function public._sokh_con_khoa(text) from public, anon, authenticated;
 revoke all on function public.sokh_xem_khach(text, text) from public;
-revoke all on function public.sokh_xem_admin(text, text) from public;
 revoke all on function public.sokh_xem_coso(text, text) from public;
 grant execute on function public.sokh_xem_khach(text, text) to anon, authenticated;
-grant execute on function public.sokh_xem_admin(text, text) to anon, authenticated;
 grant execute on function public.sokh_xem_coso(text, text) to anon, authenticated;

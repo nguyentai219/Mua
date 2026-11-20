@@ -1,4 +1,4 @@
-# Sổ Khách Hàng (v1.35)
+# Sổ Khách Hàng (v1.36)
 
 Ứng dụng đồng hành ("máy khách") của app **Mua Bán Mủ Cao Su**. Cài trên điện thoại của khách hàng bán mủ, cho phép họ tự tra cứu sổ **Thu Mua / Gửi sổ / Ứng tiền** của riêng mình — không xem được dữ liệu của khách hàng khác, và không xem được **Bán** (giao dịch bán cho vựa lớn, không liên quan tới khách hàng cá nhân).
 
@@ -8,10 +8,10 @@
 2. Trong app chính, bấm icon **👥**: mỗi khách có **Mã KH** (5 số) và **Mật khẩu xem sổ** (6 số, tự cấp; nút 🔄 Đổi để cấp mới). Nút 📋 Sao chép lấy cả 2 để gửi khách qua Zalo.
 3. **Máy khách** cài app này, nhập **Mã KH + Mật khẩu xem sổ** — **không cần đăng nhập Supabase**, không cần email.
 4. App gọi hàm `sokh_xem_khach` trên Supabase: máy chủ kiểm tra mã + mật khẩu rồi **chỉ trả về sổ của đúng khách đó**. Máy khách không đọc được dữ liệu của ai khác.
-5. **Chế độ quản trị** (giấu khỏi khách): ở màn nhập mã, **chạm 5 lần liên tiếp vào chữ "Sổ Khách Hàng"** ở đầu trang, nhập **email tài khoản Supabase của vựa** + **mật khẩu quản trị** (của app chính) → hàm `sokh_xem_admin` → menu chọn **từng khách** hoặc **📋 Tất cả khách hàng**.
+5. **Xem toàn bộ cơ sở**: nhập **mã cơ sở thu mua** (7 số) + mật khẩu (chủ vựa lấy ở màn 👥 của app chính) vào ô Mã khách hàng → hàm `sokh_xem_coso` → menu chọn **từng khách** hoặc **📋 Tất cả khách hàng**, có Thu Mua, Bán Ra, Gửi sổ, Ứng tiền, Chấm Công, Tính Toán, danh sách khách.
 
 ### Cài đặt phía Supabase (1 lần)
-Chạy file `supabase-so-khach-hang.sql` trong Supabase → SQL Editor. Tạo 2 hàm `sokh_xem_khach`, `sokh_xem_admin` (chạy quyền chủ, chỉ trả đúng phần được phép) và bảng đếm lần nhập sai (sai 5 lần → khoá mã/tài khoản đó 15 phút).
+Chạy file `supabase-so-khach-hang.sql` trong Supabase → SQL Editor. Tạo 2 hàm `sokh_xem_khach`, `sokh_xem_coso` (chạy quyền chủ, chỉ trả đúng phần được phép) và bảng đếm lần nhập sai (sai 5 lần → khoá mã/tài khoản đó 15 phút).
 
 ## Bảo mật
 
@@ -43,6 +43,7 @@ nguyentai219.github.io/XemSoKhachHang/
 
 | Phiên bản | Ngày | Thay đổi |
 |---|---|---|
+| **v1.36** | 2026-11-20 | 🏪 **Bỏ chế độ quản trị bằng email + mật khẩu quản trị**, thay hẳn bằng **mã cơ sở thu mua** (xem đầy đủ như trước): bỏ lối vào bí mật (chạm 5 lần tiêu đề); thẻ đầu trang đổi thành "🏪 Cơ sở thu mua". Máy đang lưu đăng nhập quản trị kiểu cũ phải nhập mã cơ sở. SQL xoá hàm `sokh_xem_admin` (mật khẩu quản trị mặc định giống nhau ở mọi vựa nên có rủi ro). |
 | **v1.35** | 2026-11-20 | 🏪 **Mã cơ sở thu mua**: nhập **mã cơ sở (7 số) + mật khẩu** (chủ vựa lấy ở màn 👥 của app Mủ Cao Su) vào ô Mã khách hàng → xem toàn bộ sổ của cơ sở như chế độ quản trị (hàm Supabase `sokh_xem_coso`, khoá `co_so_xem`). Chế độ quản trị/mã cơ sở có thêm thẻ **🚛 Bán Ra**, **🧮 Tính Toán** (lịch sử phân bổ; xem từng khách thì lọc theo người đó) và **👥 Khách hàng** (khi chọn "Tất cả khách hàng": Tên, Mã KH, SĐT, địa chỉ). `sokh_xem_admin` trả thêm dữ liệu Tính Toán. Cần chạy lại `supabase-so-khach-hang.sql`. |
 | **v1.34** | 2026-10-29 | 🙈 **Giấu chế độ quản trị khỏi khách hàng**: bỏ nút "Chủ vựa đăng nhập quản trị" và mục hướng dẫn chế độ quản trị; chủ vựa vào bằng cách chạm 5 lần liên tiếp vào chữ "Sổ Khách Hàng" ở màn nhập mã. Ô email quản trị hiển thị chữ thường (không còn in hoa/giãn chữ). |
 | **v1.33** | 2026-10-28 | 🐢 **Không còn đứng mãi ở màn hình logo khi mạng chập chờn**: Service Worker chờ mạng tối đa 4 giây, quá thì mở bằng bản đã lưu (bản mới vẫn tải ngầm cho lần sau). Gọi máy chủ quá 20 giây thì báo lỗi "mạng chậm" để thử lại, không treo nút "Đang xử lý". |
